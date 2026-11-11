@@ -1,5 +1,5 @@
 
-package com.ProyekPermainanOOP.blockblast;
+package src.main.java.com.ProyekPermainanOOP.blockblast;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
