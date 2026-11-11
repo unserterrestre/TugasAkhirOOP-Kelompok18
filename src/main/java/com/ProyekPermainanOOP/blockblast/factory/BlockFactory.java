@@ -1,6 +1,6 @@
-package com.ProyekPermainanOOP.blockblast.factory;
+package src.main.java.com.ProyekPermainanOOP.blockblast.factory;
 
-import com.ProyekPermainanOOP.blockblast.model.Block;
+import src.main.java.com.ProyekPermainanOOP.blockblast.model.Block;
 import java.util.Random;
 
 public class BlockFactory {

@@ -1,7 +1,7 @@
-package com.ProyekPermainanOOP.blockblast.tray;
+package src.main.java.com.ProyekPermainanOOP.blockblast.tray;
 
-import com.ProyekPermainanOOP.blockblast.factory.BlockFactory;
-import com.ProyekPermainanOOP.blockblast.model.Block;
+import src.main.java.com.ProyekPermainanOOP.blockblast.factory.BlockFactory;
+import src.main.java.com.ProyekPermainanOOP.blockblast.model.Block;
 
 public class BlockTray {
     private final Block[] traySlots = new Block[3];

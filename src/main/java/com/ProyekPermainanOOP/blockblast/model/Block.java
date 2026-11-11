@@ -1,4 +1,4 @@
-package com.ProyekPermainanOOP.blockblast.model;
+package src.main.java.com.ProyekPermainanOOP.blockblast.model;
 
 public class Block {
     private int[][] shape;
