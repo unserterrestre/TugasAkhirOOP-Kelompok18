@@ -6,7 +6,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
-import com.ProyekPermainanOOP.blockblast.graphics.BoardRenderer;
+import src.main.java.com.ProyekPermainanOOP.blockblast.graphics.BoardRenderer;
 import com.ProyekPermainanOOP.blockblast.tray.BlockTray;
 
 public class Main extends ApplicationAdapter {

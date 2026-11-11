@@ -1,4 +1,4 @@
-package com.ProyekPermainanOOP.blockblast.graphics;
+package src.main.java.com.ProyekPermainanOOP.blockblast.graphics;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
