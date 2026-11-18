@@ -1,5 +1,5 @@
 
-package com.pusaka.backend.model;
+package com.anandita_finpro.backend.model;
 
 import jakarta.persistence.*;
 import java.time.Instant;

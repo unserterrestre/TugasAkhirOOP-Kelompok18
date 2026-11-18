@@ -1,5 +1,5 @@
 
-package com.pusaka.backend.repository;
+package com.anandita_finpro.backend.repository;
 
 import com.pusaka.backend.model.PlayerAccount;
 import org.springframework.data.jpa.repository.JpaRepository;

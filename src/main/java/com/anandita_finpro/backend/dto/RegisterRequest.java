@@ -1,5 +1,5 @@
 
-package com.pusaka.backend.dto;
+package com.anandita_finpro.backend.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
