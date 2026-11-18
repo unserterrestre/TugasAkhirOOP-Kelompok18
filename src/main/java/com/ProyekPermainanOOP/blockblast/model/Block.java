@@ -1,8 +1,8 @@
-package src.main.java.com.ProyekPermainanOOP.blockblast.model;
+package com.ProyekPermainanOOP.blockblast.model;
 
 /**
  * Merepresentasikan bentuk balok puzzle 2D dengan matriks 0 dan 1.
- * Bentuk bersifat immutable (tidak dapat diputar maupun dimodifikasi dari luar).
+ * Bersifat immutable dan tidak dapat diputar sesuai aturan BAB II proposal.
  */
 public class Block {
     private final int[][] shape;
@@ -25,7 +25,7 @@ public class Block {
             if (expectedCols == -1) {
                 expectedCols = shape[r].length;
             } else if (shape[r].length != expectedCols) {
-                throw new IllegalArgumentException("Shape balok harus berbentuk matriks persegi panjang.");
+                throw new IllegalArgumentException("Shape balok harus berbentuk persegi panjang.");
             }
 
             for (int c = 0; c < shape[r].length; c++) {
@@ -49,10 +49,6 @@ public class Block {
         this.shape = deepCopy(shape);
     }
 
-    /**
-     * Mengembalikan salinan mendalam (deep copy) dari matriks bentuk balok
-     * agar pemanggil tidak dapat memodifikasi state internal objek.
-     */
     public int[][] getShape() {
         return deepCopy(this.shape);
     }
