@@ -1,4 +1,3 @@
-
 package com.anandita_finpro.backend.dto;
 
 import jakarta.validation.constraints.Max;
