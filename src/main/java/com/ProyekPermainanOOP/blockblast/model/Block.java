@@ -1,18 +1,28 @@
 package src.main.java.com.ProyekPermainanOOP.blockblast.model;
 
 /**
- * Merepresentasikan bentuk balok puzzle 2D dengan matriks 0 dan 1.
- * Bentuk bersifat immutable (tidak dapat diputar maupun dimodifikasi dari luar).
+ - Merepresentasikan bentuk balok puzzle 2D dengan matriks 0 dan 1.
+ - Bentuk bersifat immutable (tidak dapat diputar maupun dimodifikasi dari luar).
  */
 public class Block {
     private final int[][] shape;
     private final int rows;
     private final int cols;
     private final int cellCount;
+    private final int tileId;
+    private final int[][] tileGrid;
+    private boolean active;
 
     public Block(int[][] shape) {
+        this(shape, 1);
+    }
+
+    public Block(int[][] shape, int tileId) {
         if (shape == null || shape.length == 0) {
             throw new IllegalArgumentException("Shape balok tidak boleh null atau kosong.");
+        }
+        if (tileId <= 0) {
+            throw new IllegalArgumentException("Tile ID balok harus bernilai positif.");
         }
 
         int expectedCols = -1;
@@ -46,15 +56,26 @@ public class Block {
         this.rows = shape.length;
         this.cols = expectedCols;
         this.cellCount = activeCells;
+        this.tileId = tileId;
         this.shape = deepCopy(shape);
+        this.tileGrid = buildTileGrid(this.shape, tileId);
+        this.active = true;
     }
 
     /**
-     * Mengembalikan salinan mendalam (deep copy) dari matriks bentuk balok
-     * agar pemanggil tidak dapat memodifikasi state internal objek.
+     - Mengembalikan salinan mendalam (deep copy) dari matriks bentuk balok
+     - agar pemanggil tidak dapat memodifikasi state internal objek.
      */
     public int[][] getShape() {
         return deepCopy(this.shape);
+    }
+
+    public int[][] getTileGrid() {
+        return deepCopy(this.tileGrid);
+    }
+
+    public int getTileId() {
+        return tileId;
     }
 
     public int getRows() {
@@ -67,6 +88,24 @@ public class Block {
 
     public int getCellCount() {
         return cellCount;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    private static int[][] buildTileGrid(int[][] shape, int tileId) {
+        int[][] grid = new int[shape.length][shape[0].length];
+        for (int r = 0; r < shape.length; r++) {
+            for (int c = 0; c < shape[r].length; c++) {
+                grid[r][c] = (shape[r][c] == 1) ? tileId : 0;
+            }
+        }
+        return grid;
     }
 
     private static int[][] deepCopy(int[][] source) {
