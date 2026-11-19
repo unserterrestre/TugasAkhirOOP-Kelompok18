@@ -1,74 +1,56 @@
-package com.ProyekPermainanOOP.blockblast.model;
+package src.main.java.com.ProyekPermainanOOP.blockblast.model;
 
 /**
- * Merepresentasikan bentuk balok puzzle 2D dengan matriks 0 dan 1.
- * Bersifat immutable dan tidak dapat diputar sesuai aturan BAB II proposal.
+ * Objek pembawa data (immutable DTO) hasil penghapusan baris dan kolom penuh
+ * untuk perhitungan skor serta pemicu efek animasi Mahjong.
  */
-public class Block {
-    private final int[][] shape;
-    private final int rows;
-    private final int cols;
-    private final int cellCount;
+public class ClearResult {
+    private final int linesCleared;
+    private final int[] clearedRows;
+    private final int[] clearedCols;
+    private final int[][] clearedCells;
 
-    public Block(int[][] shape) {
-        if (shape == null || shape.length == 0) {
-            throw new IllegalArgumentException("Shape balok tidak boleh null atau kosong.");
+    public ClearResult(int linesCleared, int[] clearedRows, int[] clearedCols, int[][] clearedCells) {
+        if (linesCleared < 0) {
+            throw new IllegalArgumentException("Jumlah garis terhapus tidak boleh negatif.");
         }
+        this.linesCleared = linesCleared;
+        this.clearedRows = (clearedRows != null) ? clearedRows.clone() : new int[0];
+        this.clearedCols = (clearedCols != null) ? clearedCols.clone() : new int[0];
+        this.clearedCells = deepCopyCells(clearedCells);
+    }
 
-        int expectedCols = -1;
-        int activeCells = 0;
+    public static ClearResult empty() {
+        return new ClearResult(0, new int[0], new int[0], new int[0][0]);
+    }
 
-        for (int r = 0; r < shape.length; r++) {
-            if (shape[r] == null || shape[r].length == 0) {
-                throw new IllegalArgumentException("Baris pada shape balok tidak boleh null atau kosong.");
-            }
-            if (expectedCols == -1) {
-                expectedCols = shape[r].length;
-            } else if (shape[r].length != expectedCols) {
-                throw new IllegalArgumentException("Shape balok harus berbentuk persegi panjang.");
-            }
+    public int getLinesCleared() {
+        return linesCleared;
+    }
 
-            for (int c = 0; c < shape[r].length; c++) {
-                int val = shape[r][c];
-                if (val != 0 && val != 1) {
-                    throw new IllegalArgumentException("Nilai sel balok hanya boleh 0 atau 1.");
-                }
-                if (val == 1) {
-                    activeCells++;
-                }
-            }
+    public int[] getClearedRows() {
+        return clearedRows.clone();
+    }
+
+    public int[] getClearedCols() {
+        return clearedCols.clone();
+    }
+
+    public int[][] getClearedCells() {
+        return deepCopyCells(clearedCells);
+    }
+
+    public boolean hasClearedLines() {
+        return linesCleared > 0;
+    }
+
+    private static int[][] deepCopyCells(int[][] source) {
+        if (source == null) {
+            return new int[0][0];
         }
-
-        if (activeCells == 0) {
-            throw new IllegalArgumentException("Balok harus memiliki minimal satu sel aktif (bernilai 1).");
-        }
-
-        this.rows = shape.length;
-        this.cols = expectedCols;
-        this.cellCount = activeCells;
-        this.shape = deepCopy(shape);
-    }
-
-    public int[][] getShape() {
-        return deepCopy(this.shape);
-    }
-
-    public int getRows() {
-        return rows;
-    }
-
-    public int getCols() {
-        return cols;
-    }
-
-    public int getCellCount() {
-        return cellCount;
-    }
-
-    private static int[][] deepCopy(int[][] source) {
         int[][] copy = new int[source.length][];
         for (int i = 0; i < source.length; i++) {
-            copy[i] = source[i].clone();
+            copy[i] = (source[i] != null) ? source[i].clone() : new int[0];
         }
         return copy;
     }

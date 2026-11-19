@@ -1,4 +1,4 @@
-package com.ProyekPermainanOOP.blockblast.command;
+package src.main.java.com.ProyekPermainanOOP.blockblast.command;
 
 import com.ProyekPermainanOOP.blockblast.model.Block;
 import com.ProyekPermainanOOP.blockblast.systems.GameManager;
@@ -35,12 +35,10 @@ public class PlaceBlockCommand implements GameCommand {
             return false;
         }
 
-        // 1. Simpan snapshot kondisi sebelum langkah dieksekusi
         this.previousGrid = gameManager.getBoard().getGridSnapshot();
         this.previousTraySlots = gameManager.getTray().getSnapshot();
         this.previousScore = gameManager.getScoreManager().getScore();
 
-        // 2. Jalankan penempatan atomik melalui GameManager
         boolean success = gameManager.tryPlaceBlock(slot, row, col);
         if (success) {
             this.executed = true;
@@ -53,7 +51,6 @@ public class PlaceBlockCommand implements GameCommand {
         if (!executed) {
             return;
         }
-        // Pulihkan seluruh state permainan secara konsisten
         gameManager.getBoard().restoreSnapshot(previousGrid);
         gameManager.getTray().restoreSnapshot(previousTraySlots);
         gameManager.getScoreManager().restoreScore(previousScore);

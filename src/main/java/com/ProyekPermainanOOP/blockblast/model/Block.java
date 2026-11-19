@@ -1,4 +1,4 @@
-package com.ProyekPermainanOOP.blockblast.model;
+package src.main.java.com.ProyekPermainanOOP.blockblast.model;
 
 /**
  * Merepresentasikan bentuk balok puzzle 2D dengan matriks 0 dan 1.
@@ -25,7 +25,7 @@ public class Block {
             if (expectedCols == -1) {
                 expectedCols = shape[r].length;
             } else if (shape[r].length != expectedCols) {
-                throw new IllegalArgumentException("Shape balok harus berbentuk persegi panjang.");
+                throw new IllegalArgumentException("Shape balok harus berbentuk matriks persegi panjang.");
             }
 
             for (int c = 0; c < shape[r].length; c++) {
