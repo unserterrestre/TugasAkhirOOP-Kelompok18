@@ -8,7 +8,7 @@ public class Lwjgl3Launcher {
     public static void main(String[] args) {
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         config.setTitle("Pusaka - Ilmu Kuno Menjadi Keseruan");
-        config.setWindowedMode(720, 1000);
+        config.setWindowedMode(720, 900);
         config.useVsync(true);
         new Lwjgl3Application(new Main(), config);
     }
