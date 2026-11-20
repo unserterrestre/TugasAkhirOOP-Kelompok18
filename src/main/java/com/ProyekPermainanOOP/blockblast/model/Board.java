@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Mengelola papan permainan 8x8 (0 = kosong, 1 = terisi), validasi batas dan benturan,
- * penempatan balok, penghapusan garis penuh secara simultan, serta pengecekan langkah valid.
+ - Mengelola papan permainan 8x8 (0 = kosong, 1 = terisi), validasi batas dan benturan,
+ - penempatan balok, penghapusan garis penuh secara simultan, serta pengecekan langkah valid.
  */
 public class Board {
     public static final int SIZE = 8;
@@ -15,9 +15,21 @@ public class Board {
         this.grid = new int[SIZE][SIZE];
     }
 
+    public int getSize() {
+        return SIZE;
+    }
+
+    public int[][] getGrid() {
+        return getGridSnapshot();
+    }
+
+    public boolean canPlaceBlock(Block block, int col, int row) {
+        return canPlace(block, row, col);
+    }
+
     /**
-     * Memeriksa secara pure-read apakah balok dapat diletakkan dengan titik jangkar
-     * kiri-atas pada (row, col) tanpa mengubah isi papan.
+     - Memeriksa secara pure-read apakah balok dapat diletakkan dengan titik jangkar
+     - kiri-atas pada (row, col) tanpa mengubah isi papan.
      */
     public boolean canPlace(Block block, int row, int col) {
         if (block == null) {
@@ -47,8 +59,8 @@ public class Board {
     }
 
     /**
-     * Menempatkan balok pada posisi (row, col) jika valid.
-     * Jika tidak valid, papan tidak berubah dan mengembalikan false.
+     - Menempatkan balok pada posisi (row, col) jika valid.
+     - Jika tidak valid, papan tidak berubah dan mengembalikan false.
      */
     public boolean placeBlock(Block block, int row, int col) {
         if (!canPlace(block, row, col)) {
@@ -56,13 +68,15 @@ public class Board {
         }
 
         int[][] shape = block.getShape();
+        int[][] tileGrid = block.getTileGrid();
         int blockRows = block.getRows();
         int blockCols = block.getCols();
 
         for (int r = 0; r < blockRows; r++) {
             for (int c = 0; c < blockCols; c++) {
                 if (shape[r][c] == 1) {
-                    grid[row + r][col + c] = 1;
+                    int tileValue = (tileGrid[r][c] > 0) ? tileGrid[r][c] : 1;
+                    grid[row + r][col + c] = tileValue;
                 }
             }
         }
@@ -70,8 +84,8 @@ public class Board {
     }
 
     /**
-     * Mendeteksi seluruh baris dan kolom yang terisi penuh berdasarkan kondisi papan
-     * sebelum penghapusan, lalu mengosongkan semuanya secara simultan tanpa hitung ganda.
+     - Mendeteksi seluruh baris dan kolom yang terisi penuh berdasarkan kondisi papan
+     - sebelum penghapusan, lalu mengosongkan semuanya secara simultan tanpa hitung ganda.
      */
     public ClearResult clearLines() {
         boolean[] fullRows = new boolean[SIZE];
@@ -79,7 +93,6 @@ public class Board {
         List<Integer> rowIndices = new ArrayList<>();
         List<Integer> colIndices = new ArrayList<>();
 
-        // 1. Deteksi semua baris penuh
         for (int r = 0; r < SIZE; r++) {
             boolean rowFull = true;
             for (int c = 0; c < SIZE; c++) {
@@ -94,7 +107,6 @@ public class Board {
             }
         }
 
-        // 2. Deteksi semua kolom penuh dari keadaan papan yang sama
         for (int c = 0; c < SIZE; c++) {
             boolean colFull = true;
             for (int r = 0; r < SIZE; r++) {
@@ -114,8 +126,6 @@ public class Board {
             return ClearResult.empty();
         }
 
-        // 3. Kosongkan seluruh sel pada baris/kolom penuh secara simultan
-        // Sel perpotongan hanya diproses dan dicatat satu kali.
         List<int[]> uniqueClearedCells = new ArrayList<>();
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {
@@ -134,8 +144,8 @@ public class Board {
     }
 
     /**
-     * Memeriksa apakah terdapat minimal satu koordinat valid pada papan
-     * untuk menempatkan balok yang diberikan (digunakan untuk cek Game Over).
+     - Memeriksa apakah terdapat minimal satu koordinat valid pada papan
+     - untuk menempatkan balok yang diberikan (digunakan untuk cek Game Over).
      */
     public boolean hasValidMove(Block block) {
         if (block == null) {
@@ -160,8 +170,8 @@ public class Board {
     }
 
     /**
-     * Mengembalikan snapshot deep-copy dari grid 8x8 untuk kebutuhan rendering
-     * atau penyimpanan state Command pattern.
+     - Mengembalikan snapshot deep-copy dari grid 8x8 untuk kebutuhan rendering
+     - atau penyimpanan state Command pattern.
      */
     public int[][] getGridSnapshot() {
         int[][] snapshot = new int[SIZE][SIZE];
@@ -172,7 +182,7 @@ public class Board {
     }
 
     /**
-     * Memulihkan kondisi grid dari snapshot valid (mendukung fitur undo pada Command pattern).
+     - Memulihkan kondisi grid dari snapshot valid (mendukung fitur undo pada Command pattern).
      */
     public void restoreSnapshot(int[][] snapshot) {
         if (snapshot == null || snapshot.length != SIZE) {
@@ -183,8 +193,8 @@ public class Board {
                 throw new IllegalArgumentException("Snapshot papan harus berukuran 8x8.");
             }
             for (int c = 0; c < SIZE; c++) {
-                if (snapshot[r][c] != 0 && snapshot[r][c] != 1) {
-                    throw new IllegalArgumentException("Nilai sel snapshot hanya boleh 0 atau 1.");
+                if (snapshot[r][c] < 0) {
+                    throw new IllegalArgumentException("Nilai sel snapshot tidak boleh negatif.");
                 }
             }
         }
@@ -194,7 +204,7 @@ public class Board {
     }
 
     /**
-     * Mengosongkan seluruh isi papan menjadi 0 saat permainan dimulai ulang.
+     - Mengosongkan seluruh isi papan menjadi 0 saat permainan dimulai ulang.
      */
     public void reset() {
         for (int r = 0; r < SIZE; r++) {

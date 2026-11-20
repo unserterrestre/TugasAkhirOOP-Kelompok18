@@ -68,6 +68,18 @@ public class BlockFactory {
         TOTAL_WEIGHT = sum;
     }
 
+    public static int getPatternCount() {
+        return PATTERNS.length;
+    }
+
+    public static int getTotalMahjongTiles() {
+        return TOTAL_MAHJONG_TILES;
+    }
+
+    public static int getPoolSize() {
+        return blockPool.size();
+    }
+
     public static void addListener(BlockGenerationListener listener) {
         if (listener != null && !listeners.contains(listener)) {
             listeners.add(listener);
@@ -78,20 +90,71 @@ public class BlockFactory {
         listeners.remove(listener);
     }
 
+    public static void clearListeners() {
+        listeners.clear();
+    }
+
+    public static void clearPool() {
+        blockPool.clear();
+    }
+
     public static void releaseBlock(Block block) {
         if (block == null) {
             return;
         }
         block.setActive(false);
+        block.setSelected(false);
+        block.setHighlighted(false);
         if (blockPool.size() < POOL_CAPACITY && !blockPool.contains(block)) {
             blockPool.add(block);
         }
     }
 
-    private static Block acquireBlock(int[][] pattern, int tileId) {
-        Block block = new Block(pattern, tileId);
+    public static void releaseBlocks(List<Block> blocks) {
+        if (blocks == null) {
+            return;
+        }
+        for (Block block : blocks) {
+            releaseBlock(block);
+        }
+    }
+
+    private static Block prepareBlockState(Block block) {
         block.setActive(true);
+        block.setSelected(false);
+        block.setHighlighted(false);
         return block;
+    }
+
+    private static Block acquireBlock(int[][] pattern, int tileId) {
+        int[][] safePattern = deepCopy(pattern);
+        if (!blockPool.isEmpty()) {
+            Block pooled = blockPool.remove(blockPool.size() - 1);
+            if (pooled != null
+                    && pooled.getRows() == safePattern.length
+                    && pooled.getCols() == safePattern[0].length
+                    && pooled.getTileId() == tileId
+                    && java.util.Arrays.deepEquals(pooled.getShape(), safePattern)) {
+                return prepareBlockState(pooled);
+            }
+        }
+        return prepareBlockState(new Block(safePattern, tileId));
+    }
+
+    private static Block acquireBlockWithTileGrid(int[][] pattern, int[][] tileGrid) {
+        int[][] safePattern = deepCopy(pattern);
+        int[][] safeTileGrid = deepCopy(tileGrid);
+        if (!blockPool.isEmpty()) {
+            Block pooled = blockPool.remove(blockPool.size() - 1);
+            if (pooled != null
+                    && pooled.getRows() == safePattern.length
+                    && pooled.getCols() == safePattern[0].length
+                    && java.util.Arrays.deepEquals(pooled.getShape(), safePattern)
+                    && java.util.Arrays.deepEquals(pooled.getTileGrid(), safeTileGrid)) {
+                return prepareBlockState(pooled);
+            }
+        }
+        return prepareBlockState(new Block(safePattern, safeTileGrid));
     }
 
     private static int selectWeightedPatternIndex() {
@@ -107,10 +170,21 @@ public class BlockFactory {
     }
 
     public static int[][] buildTileMapping(int[][] pattern, int tileId) {
+        int safeTileId = Math.max(1, Math.min(tileId, TOTAL_MAHJONG_TILES));
         int[][] tileMap = new int[pattern.length][pattern[0].length];
         for (int r = 0; r < pattern.length; r++) {
             for (int c = 0; c < pattern[r].length; c++) {
-                tileMap[r][c] = (pattern[r][c] != 0) ? tileId : 0;
+                tileMap[r][c] = (pattern[r][c] != 0) ? safeTileId : 0;
+            }
+        }
+        return tileMap;
+    }
+
+    public static int[][] buildMixedTileMapping(int[][] pattern) {
+        int[][] tileMap = new int[pattern.length][pattern[0].length];
+        for (int r = 0; r < pattern.length; r++) {
+            for (int c = 0; c < pattern[r].length; c++) {
+                tileMap[r][c] = (pattern[r][c] != 0) ? (random.nextInt(TOTAL_MAHJONG_TILES) + 1) : 0;
             }
         }
         return tileMap;
@@ -126,6 +200,16 @@ public class BlockFactory {
         return block;
     }
 
+    public static Block createMixedTileRandomBlock() {
+        int patternIndex = selectWeightedPatternIndex();
+        int[][] pattern = PATTERNS[patternIndex];
+        int[][] mixedGrid = buildMixedTileMapping(pattern);
+
+        Block block = acquireBlockWithTileGrid(pattern, mixedGrid);
+        notifyListeners(block, patternIndex, block.getTileId());
+        return block;
+    }
+
     public static Block createBlockWithTile(int patternIndex, int tileId) {
         int safePatternIndex = Math.max(0, Math.min(patternIndex, PATTERNS.length - 1));
         int safeTileId = Math.max(1, Math.min(tileId, TOTAL_MAHJONG_TILES));
@@ -134,6 +218,27 @@ public class BlockFactory {
         Block block = acquireBlock(pattern, safeTileId);
         notifyListeners(block, safePatternIndex, safeTileId);
         return block;
+    }
+
+    public static Block createTransformedBlock(int patternIndex, int tileId, int cwRotations, boolean mirrorHorizontal) {
+        Block base = createBlockWithTile(patternIndex, tileId);
+        Block current = base;
+        int steps = ((cwRotations % 4) + 4) % 4;
+        for (int i = 0; i < steps; i++) {
+            current = current.rotatedCW();
+        }
+        if (mirrorHorizontal) {
+            current = current.mirroredHorizontal();
+        }
+        return prepareBlockState(current);
+    }
+
+    private static int[][] deepCopy(int[][] source) {
+        int[][] copy = new int[source.length][];
+        for (int i = 0; i < source.length; i++) {
+            copy[i] = source[i].clone();
+        }
+        return copy;
     }
 
     private static void notifyListeners(Block block, int patternIndex, int tileId) {
