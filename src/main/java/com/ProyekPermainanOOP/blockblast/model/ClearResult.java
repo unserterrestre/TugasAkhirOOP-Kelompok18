@@ -1,4 +1,4 @@
-package src.main.java.com.ProyekPermainanOOP.blockblast.model;
+package com.ProyekPermainanOOP.blockblast.model;
 
 /**
  * Objek pembawa data (immutable DTO) hasil penghapusan baris dan kolom penuh

@@ -1,4 +1,4 @@
-package src.main.java.com.ProyekPermainanOOP.blockblast.graphics;
+package com.ProyekPermainanOOP.blockblast.graphics;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;

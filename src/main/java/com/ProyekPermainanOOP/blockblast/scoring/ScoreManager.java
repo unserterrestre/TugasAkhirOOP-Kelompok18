@@ -1,4 +1,4 @@
-package src.main.java.com.ProyekPermainanOOP.blockblast.scoring;
+package com.ProyekPermainanOOP.blockblast.scoring;
 
 public class ScoreManager {
     private static ScoreManager instance;

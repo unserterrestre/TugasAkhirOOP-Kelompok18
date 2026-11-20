@@ -1,9 +1,9 @@
-package src.main.java.com.ProyekPermainanOOP.blockblast.input;
+package com.ProyekPermainanOOP.blockblast.input;
 
-import src.main.java.com.ProyekPermainanOOP.blockblast.graphics.BoardRenderer;
-import src.main.java.com.ProyekPermainanOOP.blockblast.model.Block;
-import src.main.java.com.ProyekPermainanOOP.blockblast.model.Board;
-import src.main.java.com.ProyekPermainanOOP.blockblast.tray.BlockTray;
+import com.ProyekPermainanOOP.blockblast.graphics.BoardRenderer;
+import com.ProyekPermainanOOP.blockblast.model.Block;
+import com.ProyekPermainanOOP.blockblast.model.Board;
+import com.ProyekPermainanOOP.blockblast.tray.BlockTray;
 import java.util.ArrayList;
 import java.util.List;
 

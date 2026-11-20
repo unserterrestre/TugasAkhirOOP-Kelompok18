@@ -1,4 +1,4 @@
-package src.main.java.com.ProyekPermainanOOP.blockblast.model;
+package com.ProyekPermainanOOP.blockblast.model;
 
 import java.util.ArrayList;
 import java.util.Arrays;

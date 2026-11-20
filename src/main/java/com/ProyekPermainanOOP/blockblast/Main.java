@@ -1,5 +1,5 @@
 
-package src.main.java.com.ProyekPermainanOOP.blockblast;
+package com.ProyekPermainanOOP.blockblast;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
 import com.ProyekPermainanOOP.blockblast.graphics.BoardRenderer;
+import com.ProyekPermainanOOP.blockblast.model.Board;
 import com.ProyekPermainanOOP.blockblast.tray.BlockTray;
 
 public class Main extends ApplicationAdapter {
@@ -20,8 +21,7 @@ public class Main extends ApplicationAdapter {
     private BoardRenderer boardRenderer;
     private BlockTray blockTray;
 
-    // Papan sementara sebelum Board.java selesai
-    private int[][] board;
+    private Board board;
 
     @Override
     public void create() {
@@ -34,7 +34,7 @@ public class Main extends ApplicationAdapter {
         blockTray = new BlockTray();
 
         // Membuat papan 8x8 kosong
-        board = new int[8][8];
+        board = new Board();
 
         // Mengatur viewport pertama kali
         viewport.update(
@@ -43,11 +43,6 @@ public class Main extends ApplicationAdapter {
                 true
         );
 
-        System.out.println("============================");
-        System.out.println("TILE FUSION - MAHJONG BLOCK");
-        System.out.println("Final Project OOP Kelompok 6");
-        System.out.println("============================");
-        System.out.println("Game berhasil dijalankan!");
     }
 
     @Override
@@ -63,11 +58,11 @@ public class Main extends ApplicationAdapter {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         // Menggambar papan dan tiga blok
-        boardRenderer.render(
-                viewport.getCamera().combined,
-                board,
-                blockTray
-        );
+        boardRenderer.begin(viewport.getCamera().combined);
+        boardRenderer.drawBackground();
+        boardRenderer.drawBoard(board.getGrid());
+        boardRenderer.drawTray(blockTray);
+        boardRenderer.end();
     }
 
     @Override

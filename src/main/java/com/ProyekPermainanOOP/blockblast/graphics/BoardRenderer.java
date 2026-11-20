@@ -1,5 +1,7 @@
-package src.main.java.com.ProyekPermainanOOP.blockblast.graphics;
+package com.ProyekPermainanOOP.blockblast.graphics;
 
+import com.ProyekPermainanOOP.blockblast.model.Block;
+import com.ProyekPermainanOOP.blockblast.tray.BlockTray;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
@@ -56,6 +58,32 @@ public class BoardRenderer implements Disposable {
                 float y = BOARD_Y + (GRID_SIZE - 1 - r) * CELL;
                 shape.setColor(grid[r][c] == 0 ? emptyCell : filledCell);
                 shape.rect(x + 2, y + 2, CELL - 4, CELL - 4);
+            }
+        }
+    }
+
+    public void drawTray(BlockTray tray) {
+        int slotCount = 3;
+        float slotWidth = BOARD_PX / slotCount;
+        float tileSize = 28f;
+        float centerY = BOARD_Y / 2f;
+        shape.setColor(filledCell);
+        for (int slot = 0; slot < slotCount; slot++) {
+            Block block = tray.getBlock(slot);
+            if (block == null) {
+                continue;
+            }
+            int[][] cells = block.getShape();
+            float startX = BOARD_X + (slot + 0.5f) * slotWidth - block.getCols() * tileSize / 2f;
+            float startY = centerY + block.getRows() * tileSize / 2f;
+            for (int row = 0; row < cells.length; row++) {
+                for (int col = 0; col < cells[row].length; col++) {
+                    if (cells[row][col] != 0) {
+                        float x = startX + col * tileSize;
+                        float y = startY - (row + 1) * tileSize;
+                        shape.rect(x + 1, y + 1, tileSize - 2, tileSize - 2);
+                    }
+                }
             }
         }
     }
