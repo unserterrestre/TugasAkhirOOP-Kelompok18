@@ -6,107 +6,72 @@ import com.ProyekPermainanOOP.blockblast.model.Board;
 import com.ProyekPermainanOOP.blockblast.tray.BlockTray;
 
 public class DragDropManager {
-    private static final float DRAG_OFFSET_Y = 48f;
-    private static final int TRAY_SLOTS = 3;
+
+    private static final float DRAG_OFFSET_Y = 75f;
 
     private Block activeBlock;
+    private int selectedSlotIndex;
+    private boolean dragging;
+
     private float touchX;
     private float touchY;
-    private float dragOffsetY;
-    private int selectedSlotIndex;
+
     private int previewRow;
     private int previewCol;
     private boolean previewValid;
 
     public DragDropManager() {
-        this(DRAG_OFFSET_Y);
+        resetDragState();
     }
 
-    public DragDropManager(float dragOffsetY) {
-        this.activeBlock = null;
-        this.touchX = 0f;
-        this.touchY = 0f;
-        this.dragOffsetY = dragOffsetY;
-        this.selectedSlotIndex = -1;
+    public void startDrag(Block block, int slotIndex, float startX, float startY) {
+        if (block == null || !block.isActive()) {
+            return;
+        }
+        this.activeBlock = block;
+        this.selectedSlotIndex = slotIndex;
+        this.dragging = true;
+        this.touchX = startX;
+        this.touchY = startY;
         this.previewRow = -1;
         this.previewCol = -1;
         this.previewValid = false;
     }
 
-    public boolean isDragging() {
-        return activeBlock != null && activeBlock.isActive();
-    }
-
-    public boolean startDrag(Block block, int slotIndex, float startX, float startY) {
-        if (block == null || !block.isActive() || slotIndex < 0 || slotIndex >= TRAY_SLOTS) {
-            return false;
-        }
-        clearActiveVisuals();
-        this.activeBlock = block;
-        this.selectedSlotIndex = slotIndex;
-        this.touchX = startX;
-        this.touchY = startY;
-        this.activeBlock.setSelected(true);
-        this.activeBlock.setHighlighted(false);
-        resetPreview();
-        return true;
-    }
-
-    public void updateDragPosition(float x, float y, Board board) {
-        this.touchX = x;
-        this.touchY = y;
-
-        if (!isDragging()) {
-            resetPreview();
+    public void updateDragPosition(float currentX, float currentY, Board board) {
+        if (!dragging || activeBlock == null) {
             return;
         }
 
-        float liftedY = y + dragOffsetY;
-        int[] hoveredCell = convertWorldToTopDownGrid(
-                x,
-                liftedY,
-                BoardRenderer.BOARD_X,
-                BoardRenderer.BOARD_Y,
-                BoardRenderer.CELL,
-                BoardRenderer.GRID_SIZE
-        );
+        this.touchX = currentX;
+        this.touchY = currentY;
 
-        if (hoveredCell != null && board != null) {
-            int anchorCol = hoveredCell[0] - (activeBlock.getCols() / 2);
-            int anchorRow = hoveredCell[1] - (activeBlock.getRows() / 2);
-            this.previewRow = anchorRow;
-            this.previewCol = anchorCol;
-            this.previewValid = board.canPlace(activeBlock, anchorRow, anchorCol);
-            this.activeBlock.setHighlighted(this.previewValid);
-        } else {
-            resetPreview();
-            this.activeBlock.setHighlighted(false);
-        }
+        float blockCenterX = currentX;
+        float blockCenterY = currentY + DRAG_OFFSET_Y;
+
+        float topLeftX = blockCenterX - (activeBlock.getCols() * BoardRenderer.CELL) / 2f;
+        float topLeftY = blockCenterY + (activeBlock.getRows() * BoardRenderer.CELL) / 2f;
+
+        int col = Math.round((topLeftX - BoardRenderer.BOARD_X) / BoardRenderer.CELL);
+        int row = Math.round((BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX - topLeftY) / BoardRenderer.CELL);
+
+        this.previewCol = col;
+        this.previewRow = row;
+        this.previewValid = (board != null) && board.canPlace(activeBlock, row, col);
     }
 
-    public int[] convertWorldToTopDownGrid(float worldX, float worldY, float boardX, float boardY, float cellSize, int gridSize) {
-        int col = (int) Math.floor((worldX - boardX) / cellSize);
-        int row = (int) Math.floor((boardY + (gridSize * cellSize) - worldY) / cellSize);
-        if (col < 0 || col >= gridSize || row < 0 || row >= gridSize) {
-            return null;
-        }
-        return new int[]{col, row};
-    }
-
-    public boolean tryDropBlock(Board board, BlockTray tray, float dropX, float dropY) {
-        if (!isDragging() || board == null || tray == null) {
+    public boolean tryDropBlock(Board board, BlockTray tray, float releaseX, float releaseY) {
+        if (!dragging || activeBlock == null || board == null || tray == null) {
             cancelDrag();
             return false;
         }
 
-        updateDragPosition(dropX, dropY, board);
+        updateDragPosition(releaseX, releaseY, board);
+
         if (previewValid && board.placeBlock(activeBlock, previewRow, previewCol)) {
-            int slotToRemove = selectedSlotIndex;
-            clearActiveVisuals();
-            activeBlock = null;
-            selectedSlotIndex = -1;
-            resetPreview();
-            tray.removeBlock(slotToRemove);
+            int slotToConsume = selectedSlotIndex;
+            resetDragState();
+            tray.consumeBlock(slotToConsume, board);
             return true;
         }
 
@@ -115,27 +80,28 @@ public class DragDropManager {
     }
 
     public void cancelDrag() {
-        clearActiveVisuals();
+        resetDragState();
+    }
+
+    private void resetDragState() {
         this.activeBlock = null;
         this.selectedSlotIndex = -1;
-        resetPreview();
-    }
-
-    private void clearActiveVisuals() {
-        if (this.activeBlock != null) {
-            this.activeBlock.setSelected(false);
-            this.activeBlock.setHighlighted(false);
-        }
-    }
-
-    private void resetPreview() {
+        this.dragging = false;
         this.previewRow = -1;
         this.previewCol = -1;
         this.previewValid = false;
     }
 
+    public boolean isDragging() {
+        return dragging;
+    }
+
     public Block getActiveBlock() {
         return activeBlock;
+    }
+
+    public int getSelectedSlotIndex() {
+        return selectedSlotIndex;
     }
 
     public float getTouchX() {
@@ -147,11 +113,7 @@ public class DragDropManager {
     }
 
     public float getDragOffsetY() {
-        return dragOffsetY;
-    }
-
-    public int getSelectedSlotIndex() {
-        return selectedSlotIndex;
+        return DRAG_OFFSET_Y;
     }
 
     public int getPreviewRow() {

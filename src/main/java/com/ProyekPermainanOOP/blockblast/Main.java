@@ -1,12 +1,18 @@
 package com.ProyekPermainanOOP.blockblast;
 
 import com.ProyekPermainanOOP.blockblast.audio.BackgroundMusicPlayer;
+import com.ProyekPermainanOOP.blockblast.audio.SoundEffectManager;
+import com.ProyekPermainanOOP.blockblast.command.PlaceBlockCommand;
 import com.ProyekPermainanOOP.blockblast.graphics.BoardRenderer;
 import com.ProyekPermainanOOP.blockblast.graphics.GameAssets;
 import com.ProyekPermainanOOP.blockblast.input.DragDropManager;
+import com.ProyekPermainanOOP.blockblast.localization.LocalizationManager;
 import com.ProyekPermainanOOP.blockblast.model.Block;
 import com.ProyekPermainanOOP.blockblast.model.Board;
 import com.ProyekPermainanOOP.blockblast.model.ClearResult;
+import com.ProyekPermainanOOP.blockblast.model.GameMode;
+import com.ProyekPermainanOOP.blockblast.model.PusakaCompendium;
+import com.ProyekPermainanOOP.blockblast.model.SpecialTileType;
 import com.ProyekPermainanOOP.blockblast.scoring.ScoreManager;
 import com.ProyekPermainanOOP.blockblast.tray.BlockTray;
 import com.badlogic.gdx.ApplicationAdapter;
@@ -15,40 +21,57 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 public class Main extends ApplicationAdapter {
 
     private static final float GAME_WIDTH = 720f;
     private static final float GAME_HEIGHT = 1000f;
     private static final int STARTING_LIVES = 3;
+    private static final int MAX_UNDO_USES = 2;
 
-    private FitViewport viewport;
+    private ExtendViewport viewport;
     private BoardRenderer boardRenderer;
     private BlockTray blockTray;
     private Board board;
     private DragDropManager dragDropManager;
     private ScoreManager scoreManager;
     private BackgroundMusicPlayer musicPlayer;
+    private SoundEffectManager soundManager;
+    private LocalizationManager localization;
+    private PusakaCompendium compendium;
+
+    private PlaceBlockCommand lastCommand;
+    private GameMode currentMode;
 
     private int lives;
-    private float elapsedSeconds;
+    private float gameTimerSeconds;
     private boolean gameOver;
+    private boolean compendiumOpen;
+    private int undoRemaining;
+
+    private int questTargetTileId;
+    private int questClearedCount;
+    private int questGoalCount;
 
     @Override
     public void create() {
-        viewport = new FitViewport(GAME_WIDTH, GAME_HEIGHT);
+        viewport = new ExtendViewport(GAME_WIDTH, GAME_HEIGHT);
         boardRenderer = new BoardRenderer();
-        blockTray = new BlockTray();
         board = new Board();
+        blockTray = new BlockTray(board);
         dragDropManager = new DragDropManager();
         scoreManager = ScoreManager.getInstance();
         musicPlayer = new BackgroundMusicPlayer();
+        soundManager = SoundEffectManager.getInstance();
+        localization = LocalizationManager.getInstance();
+        compendium = PusakaCompendium.getInstance();
 
-        lives = STARTING_LIVES;
-        elapsedSeconds = 0f;
-        gameOver = false;
+        currentMode = GameMode.CLASSIC;
+        compendiumOpen = false;
+        initSessionState();
 
         try {
             GameAssets.load();
@@ -56,9 +79,65 @@ public class Main extends ApplicationAdapter {
             System.out.println("Peringatan aset grafis: " + e.getMessage());
         }
 
-        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+        triggerAllTraySpawnAnimations();
+        centerViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         setupInputProcessor();
         checkNoMovesCondition();
+    }
+
+    private void initSessionState() {
+        lives = STARTING_LIVES;
+        gameOver = false;
+        lastCommand = null;
+        undoRemaining = MAX_UNDO_USES;
+
+        if (currentMode == GameMode.BLITZ) {
+            gameTimerSeconds = 60f;
+        } else if (currentMode == GameMode.QUEST) {
+            gameTimerSeconds = 90f;
+            questTargetTileId = MathUtils.random(1, 10);
+            questClearedCount = 0;
+            questGoalCount = 12;
+        } else {
+            gameTimerSeconds = 0f;
+        }
+    }
+
+    private void cycleGameMode() {
+        GameMode[] modes = GameMode.values();
+        currentMode = modes[(currentMode.ordinal() + 1) % modes.length];
+        restartGame();
+        boardRenderer.spawnFloatingText("MODE: " + localization.getModeName(currentMode), BoardRenderer.BOARD_X + 120f,
+                BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f + 40f, Color.GOLD);
+    }
+
+    private void performUndo() {
+        if (lastCommand == null || undoRemaining <= 0 || gameOver) {
+            return;
+        }
+        dragDropManager.cancelDrag();
+        lastCommand.undo(board, blockTray);
+        scoreManager.restoreState(lastCommand.getPreviousScore(), lastCommand.getPreviousCombo());
+        questClearedCount = lastCommand.getPreviousQuestCount();
+        lastCommand = null;
+        undoRemaining--;
+        soundManager.playUndoSound();
+        boardRenderer.spawnFloatingText("BATAL!", BoardRenderer.BOARD_X + 190f,
+                BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f, Color.CYAN);
+    }
+
+    private void centerViewport(int width, int height) {
+        viewport.update(width, height, false);
+        viewport.getCamera().position.set(GAME_WIDTH / 2f, GAME_HEIGHT / 2f, 0f);
+        viewport.getCamera().update();
+    }
+
+    private void triggerAllTraySpawnAnimations() {
+        for (int i = 0; i < blockTray.getSlotCount(); i++) {
+            if (blockTray.hasBlockAt(i)) {
+                boardRenderer.notifySlotSpawned(i);
+            }
+        }
     }
 
     private void setupInputProcessor() {
@@ -66,6 +145,29 @@ public class Main extends ApplicationAdapter {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 Vector2 worldPos = viewport.unproject(new Vector2(screenX, screenY));
+
+                if (localization.isLanguageMenuOpen()) {
+                    handleLanguageMenuClick(worldPos.x, worldPos.y);
+                    return true;
+                }
+
+                if (compendiumOpen) {
+                    compendiumOpen = false;
+                    return true;
+                }
+
+                if (isLanguageStatusBarClicked(worldPos.x, worldPos.y)) {
+                    dragDropManager.cancelDrag();
+                    localization.setLanguageMenuOpen(true);
+                    return true;
+                }
+
+                if (isCollectionBottomRightClicked(worldPos.x, worldPos.y)) {
+                    dragDropManager.cancelDrag();
+                    compendiumOpen = true;
+                    return true;
+                }
+
                 if (gameOver) {
                     restartGame();
                     return true;
@@ -83,7 +185,7 @@ public class Main extends ApplicationAdapter {
 
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
-                if (!dragDropManager.isDragging()) {
+                if (localization.isLanguageMenuOpen() || compendiumOpen || !dragDropManager.isDragging()) {
                     return false;
                 }
                 Vector2 worldPos = viewport.unproject(new Vector2(screenX, screenY));
@@ -93,39 +195,151 @@ public class Main extends ApplicationAdapter {
 
             @Override
             public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-                if (!dragDropManager.isDragging()) {
+                if (localization.isLanguageMenuOpen() || compendiumOpen || !dragDropManager.isDragging()) {
                     return false;
                 }
                 Vector2 worldPos = viewport.unproject(new Vector2(screenX, screenY));
                 Block placedBlock = dragDropManager.getActiveBlock();
-                boolean placed = dragDropManager.tryDropBlock(board, blockTray, worldPos.x, worldPos.y);
+                int usedSlot = dragDropManager.getSelectedSlotIndex();
 
-                if (placed && placedBlock != null) {
-                    ClearResult clearResult = board.clearLines();
-                    int basePoints = placedBlock.getCellCount() * 10 + clearResult.getLinesCleared() * 100;
-                    int prevScore = scoreManager.getCurrentScore();
-                    scoreManager.addScore(basePoints, clearResult.hasClearedLines());
-                    int gained = scoreManager.getCurrentScore() - prevScore;
+                dragDropManager.updateDragPosition(worldPos.x, worldPos.y, board);
+                if (placedBlock != null && dragDropManager.isPreviewValid()) {
+                    PlaceBlockCommand pendingCommand = new PlaceBlockCommand(
+                            board,
+                            blockTray,
+                            scoreManager.getCurrentScore(),
+                            scoreManager.getComboMultiplier(),
+                            questClearedCount
+                    );
 
-                    if (clearResult.hasClearedLines()) {
-                        boardRenderer.triggerLineClearAnimation(clearResult.getClearedCells(), gained);
+                    if (board.placeBlock(placedBlock, dragDropManager.getPreviewRow(), dragDropManager.getPreviewCol())) {
+                        dragDropManager.cancelDrag();
+                        lastCommand = pendingCommand;
+
+                        ClearResult clearResult = board.clearLines();
+                        int basePoints = placedBlock.getCellCount() * 10 + clearResult.getLinesCleared() * 150;
+                        int prevScore = scoreManager.getCurrentScore();
+                        scoreManager.addScore(basePoints, clearResult.hasClearedLines());
+                        int gained = scoreManager.getCurrentScore() - prevScore;
+
+                        if (clearResult.hasClearedLines()) {
+                            boardRenderer.triggerLineClearAnimation(clearResult.getClearedCells(), gained);
+                            soundManager.playClearSound(scoreManager.getComboMultiplier());
+                            if (clearResult.isSpecialTriggered()) {
+                                soundManager.playPowerUpSound();
+                            }
+
+                            int[] clearedVals = clearResult.getClearedTileValues();
+                            compendium.recordClearedTiles(clearedVals);
+
+                            if (currentMode == GameMode.BLITZ) {
+                                gameTimerSeconds += 5f;
+                                boardRenderer.spawnFloatingText("+5d!", worldPos.x + 20f, worldPos.y + 70f, Color.CYAN);
+                            } else if (currentMode == GameMode.QUEST) {
+                                for (int encoded : clearedVals) {
+                                    if (SpecialTileType.extractBaseTileId(encoded) == questTargetTileId) {
+                                        questClearedCount++;
+                                    }
+                                }
+                                if (questClearedCount >= questGoalCount) {
+                                    scoreManager.addScore(1000, true);
+                                    questTargetTileId = MathUtils.random(1, 10);
+                                    questClearedCount = 0;
+                                    questGoalCount += 4;
+                                    gameTimerSeconds += 25f;
+                                    boardRenderer.spawnFloatingText("MISI SELESAI +1000!", BoardRenderer.BOARD_X + 75f,
+                                            BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f + 20f, Color.GOLD);
+                                }
+                            }
+                        } else {
+                            boardRenderer.spawnFloatingText("+" + gained, worldPos.x - 24f, worldPos.y + 40f, Color.WHITE);
+                            soundManager.playPlaceSound();
+                        }
+
+                        blockTray.takeBlock(usedSlot);
+                        if (blockTray.isTrayEmpty()) {
+                            blockTray.refillTray(board);
+                            triggerAllTraySpawnAnimations();
+                        }
+
+                        checkNoMovesCondition();
                     } else {
-                        boardRenderer.spawnFloatingText("+" + gained, worldPos.x - 24f, worldPos.y + 40f, Color.WHITE);
+                        dragDropManager.cancelDrag();
                     }
-
-                    checkNoMovesCondition();
+                } else {
+                    dragDropManager.cancelDrag();
                 }
                 return true;
             }
 
             @Override
             public boolean keyDown(int keycode) {
+                if (keycode == Input.Keys.L) {
+                    dragDropManager.cancelDrag();
+                    compendiumOpen = false;
+                    localization.toggleLanguageMenu();
+                    return true;
+                }
+                if (keycode == Input.Keys.K) {
+                    dragDropManager.cancelDrag();
+                    localization.setLanguageMenuOpen(false);
+                    compendiumOpen = !compendiumOpen;
+                    return true;
+                }
+                if (localization.isLanguageMenuOpen()) {
+                    if (keycode == Input.Keys.UP) {
+                        localization.moveSelection(-1);
+                        return true;
+                    }
+                    if (keycode == Input.Keys.DOWN) {
+                        localization.moveSelection(1);
+                        return true;
+                    }
+                    if (keycode == Input.Keys.LEFT) {
+                        localization.moveSelection(-BoardRenderer.LANG_ROWS);
+                        return true;
+                    }
+                    if (keycode == Input.Keys.RIGHT) {
+                        localization.moveSelection(BoardRenderer.LANG_ROWS);
+                        return true;
+                    }
+                    if (keycode >= Input.Keys.NUM_1 && keycode <= Input.Keys.NUM_9) {
+                        localization.setLanguageByIndex(keycode - Input.Keys.NUM_1);
+                        localization.setLanguageMenuOpen(false);
+                        return true;
+                    }
+                    if (keycode == Input.Keys.NUM_0) {
+                        localization.setLanguageByIndex(9);
+                        localization.setLanguageMenuOpen(false);
+                        return true;
+                    }
+                    if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.ENTER) {
+                        localization.setLanguageMenuOpen(false);
+                        return true;
+                    }
+                    return true;
+                }
+                if (compendiumOpen) {
+                    if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.ENTER) {
+                        compendiumOpen = false;
+                    }
+                    return true;
+                }
+                if (keycode == Input.Keys.G) {
+                    cycleGameMode();
+                    return true;
+                }
+                if (keycode == Input.Keys.Z) {
+                    performUndo();
+                    return true;
+                }
                 if (keycode == Input.Keys.R) {
                     restartGame();
                     return true;
                 }
                 if (keycode == Input.Keys.M && musicPlayer != null) {
                     musicPlayer.toggleMute();
+                    soundManager.setEnabled(!musicPlayer.isMuted());
                     return true;
                 }
                 if (keycode == Input.Keys.ESCAPE && dragDropManager.isDragging()) {
@@ -135,6 +349,32 @@ public class Main extends ApplicationAdapter {
                 return false;
             }
         });
+    }
+
+    private boolean isLanguageStatusBarClicked(float x, float y) {
+        return y >= BoardRenderer.VIEW_H - 52f && y <= BoardRenderer.VIEW_H
+                && x >= BoardRenderer.BOARD_X + BoardRenderer.BOARD_PX - 150f
+                && x <= BoardRenderer.BOARD_X + BoardRenderer.BOARD_PX + 40f;
+    }
+
+    private boolean isCollectionBottomRightClicked(float x, float y) {
+        float screenRightX = (GAME_WIDTH + viewport.getWorldWidth()) * 0.5f;
+        return y >= 0f && y <= 65f && x >= screenRightX - 260f && x <= screenRightX;
+    }
+
+    private void handleLanguageMenuClick(float x, float y) {
+        int count = LocalizationManager.Language.values().length;
+        for (int i = 0; i < count; i++) {
+            float btnX = BoardRenderer.getLanguageButtonX(i);
+            float btnY = BoardRenderer.getLanguageButtonY(i);
+            if (x >= btnX && x <= btnX + BoardRenderer.LANG_BTN_W
+                    && y >= btnY && y <= btnY + BoardRenderer.LANG_BTN_H) {
+                localization.setLanguageByIndex(i);
+                localization.setLanguageMenuOpen(false);
+                return;
+            }
+        }
+        localization.setLanguageMenuOpen(false);
     }
 
     private int findTraySlotAt(float worldX, float worldY) {
@@ -162,14 +402,17 @@ public class Main extends ApplicationAdapter {
         if (!blockTray.hasAnyValidPlacement(board)) {
             if (lives > 1) {
                 lives--;
-                blockTray.resetTray();
-                boardRenderer.spawnFloatingText("NYAWA -1! TRAY BARU", BoardRenderer.BOARD_X + 95f,
+                soundManager.playLifeLostSound();
+                blockTray.resetTray(board);
+                triggerAllTraySpawnAnimations();
+                boardRenderer.spawnFloatingText(localization.getNewTrayAlert(), BoardRenderer.BOARD_X + 85f,
                         BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f, Color.SALMON);
                 if (!blockTray.hasAnyValidPlacement(board)) {
                     gameOver = true;
                 }
             } else {
                 lives = 0;
+                soundManager.playLifeLostSound();
                 gameOver = true;
             }
         }
@@ -178,42 +421,57 @@ public class Main extends ApplicationAdapter {
     private void restartGame() {
         dragDropManager.cancelDrag();
         board.reset();
-        blockTray.resetTray();
+        blockTray.resetTray(board);
+        triggerAllTraySpawnAnimations();
         scoreManager.resetScore();
-        lives = STARTING_LIVES;
-        elapsedSeconds = 0f;
-        gameOver = false;
+        initSessionState();
         checkNoMovesCondition();
     }
 
     @Override
     public void render() {
         float delta = Gdx.graphics.getDeltaTime();
-        if (!gameOver) {
-            elapsedSeconds += delta;
+        boolean paused = gameOver || localization.isLanguageMenuOpen() || compendiumOpen;
+        if (!paused) {
+            if (currentMode == GameMode.CLASSIC) {
+                gameTimerSeconds += delta;
+            } else {
+                gameTimerSeconds -= delta;
+                if (gameTimerSeconds <= 0f) {
+                    gameTimerSeconds = 0f;
+                    gameOver = true;
+                }
+            }
         }
         boardRenderer.updateAnimations(delta);
 
         viewport.apply();
+        viewport.getCamera().position.set(GAME_WIDTH / 2f, GAME_HEIGHT / 2f, 0f);
+        viewport.getCamera().update();
 
-        Gdx.gl.glClearColor(0.02f, 0.11f, 0.09f, 1f);
+        Gdx.gl.glClearColor(0.05f, 0.22f, 0.17f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         int selectedSlot = dragDropManager.isDragging() ? dragDropManager.getSelectedSlotIndex() : -1;
         int[][] gridSnapshot = board.getGridSnapshot();
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
 
         boardRenderer.begin(viewport.getCamera().combined);
-        boardRenderer.drawBackground();
+        boardRenderer.drawBackground(worldW, worldH);
         boardRenderer.drawHudPanels();
         boardRenderer.drawBoard(gridSnapshot);
-        boardRenderer.drawDragPreview(dragDropManager);
+        boardRenderer.drawPlacementGuidance(gridSnapshot, dragDropManager, localization.isLanguageMenuOpen() || compendiumOpen);
         boardRenderer.drawTray(blockTray, selectedSlot);
         boardRenderer.drawDraggedBlock(dragDropManager);
         boardRenderer.drawClearFlashes();
+        boardRenderer.drawModalShapes(compendiumOpen);
         boardRenderer.end();
 
         boardRenderer.drawOverlay(
                 viewport.getCamera().combined,
+                worldW,
+                worldH,
                 gridSnapshot,
                 blockTray,
                 dragDropManager,
@@ -221,15 +479,21 @@ public class Main extends ApplicationAdapter {
                 scoreManager.getHighScore(),
                 scoreManager.getComboMultiplier(),
                 lives,
-                elapsedSeconds,
+                gameTimerSeconds,
                 musicPlayer != null && musicPlayer.isMuted(),
-                gameOver
+                gameOver,
+                currentMode,
+                questTargetTileId,
+                questClearedCount,
+                questGoalCount,
+                undoRemaining,
+                compendiumOpen
         );
     }
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height, true);
+        centerViewport(width, height);
     }
 
     @Override

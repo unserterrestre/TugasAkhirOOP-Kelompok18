@@ -1,14 +1,31 @@
 package com.ProyekPermainanOOP.blockblast.model;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 
 public class Board {
     public static final int SIZE = 8;
+    private static final int MIN_LINE_LENGTH = 4;
+    private static final int MIN_CLUSTER_SIZE = 5;
+
     private final int[][] grid;
+    private final int[][] placementGrid;
+    private final Map<SpecialTileType, SpecialTileStrategy> strategies;
+    private int nextPlacementId;
 
     public Board() {
         this.grid = new int[SIZE][SIZE];
+        this.placementGrid = new int[SIZE][SIZE];
+        this.nextPlacementId = 1;
+        this.strategies = new EnumMap<>(SpecialTileType.class);
+        this.strategies.put(SpecialTileType.DRAGON_VEIN, new DragonVeinStrategy());
+        this.strategies.put(SpecialTileType.TALISMAN_BOMB, new TalismanBombStrategy());
     }
 
     public int getSize() {
@@ -59,80 +76,183 @@ public class Board {
         int[][] tileGrid = block.getTileGrid();
         int blockRows = block.getRows();
         int blockCols = block.getCols();
+        int currentPlacementId = nextPlacementId++;
 
         for (int r = 0; r < blockRows; r++) {
             for (int c = 0; c < blockCols; c++) {
                 if (shape[r][c] == 1) {
                     int tileValue = (tileGrid[r][c] > 0) ? tileGrid[r][c] : block.getTileId();
                     grid[row + r][col + c] = tileValue;
+                    placementGrid[row + r][col + c] = currentPlacementId;
                 }
             }
         }
         return true;
     }
 
+    private boolean isWildcard(int encodedVal) {
+        return SpecialTileType.fromEncoded(encodedVal) == SpecialTileType.JADE_WILDCARD;
+    }
+
+    private boolean tilesMatch(int encodedVal, int targetBaseId) {
+        if (encodedVal <= 0) {
+            return false;
+        }
+        if (isWildcard(encodedVal)) {
+            return true;
+        }
+        return SpecialTileType.extractBaseTileId(encodedVal) == targetBaseId;
+    }
+
     public ClearResult clearLines() {
-        boolean[] matchingRows = new boolean[SIZE];
-        boolean[] matchingCols = new boolean[SIZE];
-        List<Integer> rowIndices = new ArrayList<>();
-        List<Integer> colIndices = new ArrayList<>();
+        boolean[][] toClear = new boolean[SIZE][SIZE];
+        List<Integer> matchedRows = new ArrayList<>();
+        List<Integer> matchedCols = new ArrayList<>();
+        int totalMatches = 0;
 
-        for (int r = 0; r < SIZE; r++) {
-            int expectedTile = grid[r][0];
-            if (expectedTile == 0) {
-                continue;
-            }
-            boolean sameTileRow = true;
-            for (int c = 1; c < SIZE; c++) {
-                if (grid[r][c] != expectedTile) {
-                    sameTileRow = false;
-                    break;
+        for (int targetBase = 1; targetBase <= 10; targetBase++) {
+            for (int r = 0; r < SIZE; r++) {
+                int c = 0;
+                while (c < SIZE) {
+                    if (!tilesMatch(grid[r][c], targetBase)) {
+                        c++;
+                        continue;
+                    }
+                    int end = c + 1;
+                    while (end < SIZE && tilesMatch(grid[r][end], targetBase)) {
+                        end++;
+                    }
+                    if (end - c >= MIN_LINE_LENGTH) {
+                        Set<Integer> distinctBlocks = new HashSet<>();
+                        for (int k = c; k < end; k++) {
+                            distinctBlocks.add(placementGrid[r][k]);
+                        }
+                        if (distinctBlocks.size() >= 2) {
+                            totalMatches++;
+                            if (!matchedRows.contains(r)) {
+                                matchedRows.add(r);
+                            }
+                            for (int k = c; k < end; k++) {
+                                toClear[r][k] = true;
+                            }
+                        }
+                    }
+                    c = end;
                 }
             }
-            if (sameTileRow) {
-                matchingRows[r] = true;
-                rowIndices.add(r);
+
+            for (int c = 0; c < SIZE; c++) {
+                int r = 0;
+                while (r < SIZE) {
+                    if (!tilesMatch(grid[r][c], targetBase)) {
+                        r++;
+                        continue;
+                    }
+                    int end = r + 1;
+                    while (end < SIZE && tilesMatch(grid[end][c], targetBase)) {
+                        end++;
+                    }
+                    if (end - r >= MIN_LINE_LENGTH) {
+                        Set<Integer> distinctBlocks = new HashSet<>();
+                        for (int k = r; k < end; k++) {
+                            distinctBlocks.add(placementGrid[k][c]);
+                        }
+                        if (distinctBlocks.size() >= 2) {
+                            totalMatches++;
+                            if (!matchedCols.contains(c)) {
+                                matchedCols.add(c);
+                            }
+                            for (int k = r; k < end; k++) {
+                                toClear[k][c] = true;
+                            }
+                        }
+                    }
+                    r = end;
+                }
+            }
+
+            boolean[][] visited = new boolean[SIZE][SIZE];
+            int[] dr = {-1, 1, 0, 0};
+            int[] dc = {0, 0, -1, 1};
+
+            for (int r = 0; r < SIZE; r++) {
+                for (int c = 0; c < SIZE; c++) {
+                    if (visited[r][c] || !tilesMatch(grid[r][c], targetBase)) {
+                        continue;
+                    }
+
+                    List<int[]> group = new ArrayList<>();
+                    Set<Integer> distinctBlocks = new HashSet<>();
+                    Queue<int[]> queue = new ArrayDeque<>();
+                    visited[r][c] = true;
+                    queue.add(new int[]{r, c});
+
+                    while (!queue.isEmpty()) {
+                        int[] curr = queue.poll();
+                        group.add(curr);
+                        distinctBlocks.add(placementGrid[curr[0]][curr[1]]);
+                        for (int d = 0; d < 4; d++) {
+                            int nr = curr[0] + dr[d];
+                            int nc = curr[1] + dc[d];
+                            if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && !visited[nr][nc] && tilesMatch(grid[nr][nc], targetBase)) {
+                                visited[nr][nc] = true;
+                                queue.add(new int[]{nr, nc});
+                            }
+                        }
+                    }
+
+                    if (group.size() >= MIN_CLUSTER_SIZE && distinctBlocks.size() >= 2) {
+                        totalMatches++;
+                        for (int[] cell : group) {
+                            toClear[cell[0]][cell[1]] = true;
+                        }
+                    }
+                }
             }
         }
 
-        for (int c = 0; c < SIZE; c++) {
-            int expectedTile = grid[0][c];
-            if (expectedTile == 0) {
-                continue;
-            }
-            boolean sameTileCol = true;
-            for (int r = 1; r < SIZE; r++) {
-                if (grid[r][c] != expectedTile) {
-                    sameTileCol = false;
-                    break;
-                }
-            }
-            if (sameTileCol) {
-                matchingCols[c] = true;
-                colIndices.add(c);
-            }
-        }
-
-        int totalLinesCleared = rowIndices.size() + colIndices.size();
-        if (totalLinesCleared == 0) {
+        if (totalMatches == 0) {
             return ClearResult.empty();
         }
 
-        List<int[]> uniqueClearedCells = new ArrayList<>();
+        boolean specialTriggered = false;
+        boolean[][] snapshotToClear = new boolean[SIZE][SIZE];
+        for (int r = 0; r < SIZE; r++) {
+            snapshotToClear[r] = toClear[r].clone();
+        }
+
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {
-                if (matchingRows[r] || matchingCols[c]) {
+                if (snapshotToClear[r][c]) {
+                    SpecialTileType type = SpecialTileType.fromEncoded(grid[r][c]);
+                    SpecialTileStrategy strategy = strategies.get(type);
+                    if (strategy != null) {
+                        specialTriggered = true;
+                        strategy.applyEffect(r, c, SIZE, toClear);
+                    }
+                }
+            }
+        }
+
+        List<int[]> uniqueClearedCells = new ArrayList<>();
+        List<Integer> clearedTileValues = new ArrayList<>();
+        for (int r = 0; r < SIZE; r++) {
+            for (int c = 0; c < SIZE; c++) {
+                if (toClear[r][c] && grid[r][c] != 0) {
+                    clearedTileValues.add(grid[r][c]);
                     grid[r][c] = 0;
+                    placementGrid[r][c] = 0;
                     uniqueClearedCells.add(new int[]{r, c});
                 }
             }
         }
 
-        int[] clearedRowsArr = rowIndices.stream().mapToInt(Integer::intValue).toArray();
-        int[] clearedColsArr = colIndices.stream().mapToInt(Integer::intValue).toArray();
+        int[] clearedRowsArr = matchedRows.stream().mapToInt(Integer::intValue).toArray();
+        int[] clearedColsArr = matchedCols.stream().mapToInt(Integer::intValue).toArray();
         int[][] clearedCellsArr = uniqueClearedCells.toArray(new int[0][]);
+        int[] clearedValuesArr = clearedTileValues.stream().mapToInt(Integer::intValue).toArray();
 
-        return new ClearResult(totalLinesCleared, clearedRowsArr, clearedColsArr, clearedCellsArr);
+        return new ClearResult(totalMatches, clearedRowsArr, clearedColsArr, clearedCellsArr, clearedValuesArr, specialTriggered);
     }
 
     public boolean hasValidMove(Block block) {
@@ -173,22 +293,23 @@ public class Board {
             if (snapshot[r] == null || snapshot[r].length != SIZE) {
                 throw new IllegalArgumentException("Snapshot papan harus berukuran 8x8.");
             }
-            for (int c = 0; c < SIZE; c++) {
-                if (snapshot[r][c] < 0) {
-                    throw new IllegalArgumentException("Nilai sel snapshot tidak boleh negatif.");
-                }
-            }
         }
         for (int r = 0; r < SIZE; r++) {
             grid[r] = snapshot[r].clone();
+            for (int c = 0; c < SIZE; c++) {
+                placementGrid[r][c] = (snapshot[r][c] > 0) ? nextPlacementId : 0;
+            }
         }
+        nextPlacementId++;
     }
 
     public void reset() {
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {
                 grid[r][c] = 0;
+                placementGrid[r][c] = 0;
             }
         }
+        nextPlacementId = 1;
     }
 }

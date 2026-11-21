@@ -1,27 +1,29 @@
 package com.ProyekPermainanOOP.blockblast.model;
 
-/**
- * Objek pembawa data (immutable DTO) hasil penghapusan baris dan kolom penuh
- * untuk kebutuhan perhitungan skor serta pemicu animasi efek Mahjong.
- */
 public class ClearResult {
     private final int linesCleared;
     private final int[] clearedRows;
     private final int[] clearedCols;
-    private final int[][] clearedCells; // Setiap elemen berformat {row, col}
+    private final int[][] clearedCells;
+    private final int[] clearedTileValues;
+    private final boolean specialTriggered;
 
     public ClearResult(int linesCleared, int[] clearedRows, int[] clearedCols, int[][] clearedCells) {
-        if (linesCleared < 0) {
-            throw new IllegalArgumentException("Jumlah garis terhapus tidak boleh negatif.");
-        }
+        this(linesCleared, clearedRows, clearedCols, clearedCells, new int[0], false);
+    }
+
+    public ClearResult(int linesCleared, int[] clearedRows, int[] clearedCols, int[][] clearedCells,
+                       int[] clearedTileValues, boolean specialTriggered) {
         this.linesCleared = linesCleared;
-        this.clearedRows = (clearedRows != null) ? clearedRows.clone() : new int[0];
-        this.clearedCols = (clearedCols != null) ? clearedCols.clone() : new int[0];
-        this.clearedCells = deepCopyCells(clearedCells);
+        this.clearedRows = clearedRows;
+        this.clearedCols = clearedCols;
+        this.clearedCells = clearedCells;
+        this.clearedTileValues = clearedTileValues;
+        this.specialTriggered = specialTriggered;
     }
 
     public static ClearResult empty() {
-        return new ClearResult(0, new int[0], new int[0], new int[0][0]);
+        return new ClearResult(0, new int[0], new int[0], new int[0][0], new int[0], false);
     }
 
     public int getLinesCleared() {
@@ -29,29 +31,26 @@ public class ClearResult {
     }
 
     public int[] getClearedRows() {
-        return clearedRows.clone();
+        return clearedRows;
     }
 
     public int[] getClearedCols() {
-        return clearedCols.clone();
+        return clearedCols;
     }
 
     public int[][] getClearedCells() {
-        return deepCopyCells(clearedCells);
+        return clearedCells;
+    }
+
+    public int[] getClearedTileValues() {
+        return clearedTileValues;
+    }
+
+    public boolean isSpecialTriggered() {
+        return specialTriggered;
     }
 
     public boolean hasClearedLines() {
-        return linesCleared > 0;
-    }
-
-    private static int[][] deepCopyCells(int[][] source) {
-        if (source == null) {
-            return new int[0][0];
-        }
-        int[][] copy = new int[source.length][];
-        for (int i = 0; i < source.length; i++) {
-            copy[i] = (source[i] != null) ? source[i].clone() : new int[0];
-        }
-        return copy;
+        return linesCleared > 0 || clearedCells.length > 0;
     }
 }

@@ -18,6 +18,14 @@ public class GameAssets {
             Texture tex = new Texture(Gdx.files.internal(fileNames[i]));
             chineseCharTiles[i] = new TextureRegion(tex);
         }
+
+        if (chineseCharTiles != null) {
+            for (TextureRegion region : chineseCharTiles) {
+                if (region != null && region.getTexture() != null) {
+                    region.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+                }
+            }
+        }
     }
 
     public static TextureRegion getRandomChineseTile() {
