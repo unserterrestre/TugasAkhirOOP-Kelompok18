@@ -107,7 +107,7 @@ public class Main extends ApplicationAdapter {
         GameMode[] modes = GameMode.values();
         currentMode = modes[(currentMode.ordinal() + 1) % modes.length];
         restartGame();
-        boardRenderer.spawnFloatingText("MODE: " + localization.getModeName(currentMode), BoardRenderer.BOARD_X + 120f,
+        boardRenderer.spawnFloatingText("MODE: " + localization.getModeName(currentMode), BoardRenderer.BOARD_X + 180f,
                 BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f + 40f, Color.GOLD);
     }
 
@@ -122,7 +122,7 @@ public class Main extends ApplicationAdapter {
         lastCommand = null;
         undoRemaining--;
         soundManager.playUndoSound();
-        boardRenderer.spawnFloatingText("BATAL!", BoardRenderer.BOARD_X + 190f,
+        boardRenderer.spawnFloatingText("BATAL!", BoardRenderer.BOARD_X + 260f,
                 BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f, Color.CYAN);
     }
 
@@ -152,13 +152,11 @@ public class Main extends ApplicationAdapter {
                 }
 
                 if (compendiumOpen) {
-                    compendiumOpen = false;
+                    handleCompendiumClick(worldPos.x, worldPos.y);
                     return true;
                 }
 
-                if (isLanguageStatusBarClicked(worldPos.x, worldPos.y)) {
-                    dragDropManager.cancelDrag();
-                    localization.setLanguageMenuOpen(true);
+                if (handleRightInfoCardClick(worldPos.x, worldPos.y)) {
                     return true;
                 }
 
@@ -247,7 +245,7 @@ public class Main extends ApplicationAdapter {
                                     questClearedCount = 0;
                                     questGoalCount += 4;
                                     gameTimerSeconds += 25f;
-                                    boardRenderer.spawnFloatingText("MISI SELESAI +1000!", BoardRenderer.BOARD_X + 75f,
+                                    boardRenderer.spawnFloatingText("MISI SELESAI +1000!", BoardRenderer.BOARD_X + 120f,
                                             BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f + 20f, Color.GOLD);
                                 }
                             }
@@ -320,6 +318,14 @@ public class Main extends ApplicationAdapter {
                     return true;
                 }
                 if (compendiumOpen) {
+                    if (keycode == Input.Keys.LEFT) {
+                        compendium.previousPage();
+                        return true;
+                    }
+                    if (keycode == Input.Keys.RIGHT) {
+                        compendium.nextPage();
+                        return true;
+                    }
                     if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.ENTER) {
                         compendiumOpen = false;
                     }
@@ -351,15 +357,45 @@ public class Main extends ApplicationAdapter {
         });
     }
 
-    private boolean isLanguageStatusBarClicked(float x, float y) {
-        return y >= BoardRenderer.VIEW_H - 52f && y <= BoardRenderer.VIEW_H
-                && x >= BoardRenderer.BOARD_X + BoardRenderer.BOARD_PX - 150f
-                && x <= BoardRenderer.BOARD_X + BoardRenderer.BOARD_PX + 40f;
+    private boolean handleRightInfoCardClick(float x, float y) {
+        float rightX = BoardRenderer.getRightPanelX(viewport.getWorldWidth());
+        float infoY = BoardRenderer.getInfoRightCardY();
+        if (x >= rightX && x <= rightX + BoardRenderer.SIDE_PANEL_W
+                && y >= infoY && y <= infoY + BoardRenderer.INFO_CARD_H) {
+            float relY = y - infoY;
+            if (relY < 64f) {
+                dragDropManager.cancelDrag();
+                localization.setLanguageMenuOpen(true);
+            } else if (relY < 114f) {
+                performUndo();
+            } else if (relY < 164f) {
+                cycleGameMode();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private void handleCompendiumClick(float x, float y) {
+        if (y >= BoardRenderer.COMP_NAV_BTN_Y && y <= BoardRenderer.COMP_NAV_BTN_Y + BoardRenderer.COMP_NAV_BTN_H) {
+            if (x >= BoardRenderer.COMP_PREV_BTN_X && x <= BoardRenderer.COMP_PREV_BTN_X + BoardRenderer.COMP_NAV_BTN_W) {
+                compendium.previousPage();
+                return;
+            }
+            if (x >= BoardRenderer.COMP_NEXT_BTN_X && x <= BoardRenderer.COMP_NEXT_BTN_X + BoardRenderer.COMP_NAV_BTN_W) {
+                compendium.nextPage();
+                return;
+            }
+        }
+        if (x < BoardRenderer.COMPENDIUM_X || x > BoardRenderer.COMPENDIUM_X + BoardRenderer.COMPENDIUM_W
+                || y < BoardRenderer.COMPENDIUM_Y || y > BoardRenderer.COMPENDIUM_Y + BoardRenderer.COMPENDIUM_H) {
+            compendiumOpen = false;
+        }
     }
 
     private boolean isCollectionBottomRightClicked(float x, float y) {
         float screenRightX = (GAME_WIDTH + viewport.getWorldWidth()) * 0.5f;
-        return y >= 0f && y <= 65f && x >= screenRightX - 260f && x <= screenRightX;
+        return y >= 0f && y <= 78f && x >= screenRightX - 340f && x <= screenRightX;
     }
 
     private void handleLanguageMenuClick(float x, float y) {
@@ -380,7 +416,7 @@ public class Main extends ApplicationAdapter {
     private int findTraySlotAt(float worldX, float worldY) {
         int slotCount = blockTray.getSlotCount();
         float slotWidth = BoardRenderer.BOARD_PX / slotCount;
-        float hitHeight = 150f;
+        float hitHeight = 164f;
         float minY = BoardRenderer.TRAY_CENTER_Y - hitHeight / 2f;
         float maxY = BoardRenderer.TRAY_CENTER_Y + hitHeight / 2f;
 
@@ -405,7 +441,7 @@ public class Main extends ApplicationAdapter {
                 soundManager.playLifeLostSound();
                 blockTray.resetTray(board);
                 triggerAllTraySpawnAnimations();
-                boardRenderer.spawnFloatingText(localization.getNewTrayAlert(), BoardRenderer.BOARD_X + 85f,
+                boardRenderer.spawnFloatingText(localization.getNewTrayAlert(), BoardRenderer.BOARD_X + 140f,
                         BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f, Color.SALMON);
                 if (!blockTray.hasAnyValidPlacement(board)) {
                     gameOver = true;
@@ -459,7 +495,18 @@ public class Main extends ApplicationAdapter {
 
         boardRenderer.begin(viewport.getCamera().combined);
         boardRenderer.drawBackground(worldW, worldH);
-        boardRenderer.drawHudPanels();
+        boardRenderer.end();
+
+        boardRenderer.drawBackgroundFlyingTiles(
+                viewport.getCamera().combined,
+                worldW,
+                worldH,
+                scoreManager.getComboMultiplier(),
+                scoreManager.getCurrentScore()
+        );
+
+        boardRenderer.begin(viewport.getCamera().combined);
+        boardRenderer.drawHudPanels(worldW);
         boardRenderer.drawBoard(gridSnapshot);
         boardRenderer.drawPlacementGuidance(gridSnapshot, dragDropManager, localization.isLanguageMenuOpen() || compendiumOpen);
         boardRenderer.drawTray(blockTray, selectedSlot);
