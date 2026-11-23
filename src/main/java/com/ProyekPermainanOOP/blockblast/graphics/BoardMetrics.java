@@ -45,6 +45,11 @@ public final class BoardMetrics {
     public static final float COMP_PREV_BTN_X = COMPENDIUM_X + 36f;
     public static final float COMP_NEXT_BTN_X = COMPENDIUM_X + COMPENDIUM_W - 36f - COMP_NAV_BTN_W;
 
+    public static final float GAME_OVER_CARD_W = 540f;
+    public static final float GAME_OVER_CARD_H = 264f;
+    public static final float GAME_OVER_CARD_X = BOARD_X + (BOARD_PX - GAME_OVER_CARD_W) / 2f;
+    public static final float GAME_OVER_CARD_Y = BOARD_Y + (BOARD_PX - GAME_OVER_CARD_H) / 2f;
+
     private BoardMetrics() {
     }
 

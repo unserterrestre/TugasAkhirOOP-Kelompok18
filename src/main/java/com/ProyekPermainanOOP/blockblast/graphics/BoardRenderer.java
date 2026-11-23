@@ -172,15 +172,27 @@ public class BoardRenderer implements Disposable {
         this.activeCombo = Math.max(1, combo);
         this.latestScore = score;
 
+        boolean modalOpen = localization.isLanguageMenuOpen() || compendiumOpen;
+
         batch.setProjectionMatrix(projection);
         batch.begin();
 
         effectManager.drawBurstTiles(batch);
 
-        if (!localization.isLanguageMenuOpen() && !compendiumOpen) {
+        if (!modalOpen) {
             gridRenderer.drawTiles(batch, grid);
             trayBlockRenderer.drawTrayAndDraggedTiles(batch, tray, dragDropManager, effectManager, elapsedAnimTime);
         }
+
+        batch.end();
+
+        if (gameOver && !modalOpen) {
+            begin(projection);
+            hudRenderer.drawGameOverPanel(shape, true, false);
+            end();
+        }
+
+        batch.begin();
 
         hudRenderer.drawTexts(batch, hudFont, bigFont, glyphLayout, worldW, score, highScore, combo, lives,
                 elapsedSeconds, muted, gameOver, gameMode, questTileId, questCurrent, questTarget,
