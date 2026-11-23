@@ -200,6 +200,9 @@ public class Main extends ApplicationAdapter {
                 Block placedBlock = dragDropManager.getActiveBlock();
                 int usedSlot = dragDropManager.getSelectedSlotIndex();
 
+
+
+
                 dragDropManager.updateDragPosition(worldPos.x, worldPos.y, board);
                 if (placedBlock != null && dragDropManager.isPreviewValid()) {
                     PlaceBlockCommand pendingCommand = new PlaceBlockCommand(
@@ -225,6 +228,34 @@ public class Main extends ApplicationAdapter {
                             soundManager.playClearSound(scoreManager.getComboMultiplier());
                             if (clearResult.isSpecialTriggered()) {
                                 soundManager.playPowerUpSound();
+                            }
+
+                            if (clearResult.hasSynergy()) {
+                                if (clearResult.getSynergyBonusScore() > 0) {
+                                    scoreManager.addScore(clearResult.getSynergyBonusScore(), false);
+                                }
+                                if (clearResult.getSynergyBonusLives() > 0) {
+                                    lives = Math.min(STARTING_LIVES, lives + clearResult.getSynergyBonusLives());
+                                }
+                                boardRenderer.spawnFloatingText(
+                                        clearResult.getSynergyName(),
+                                        BoardRenderer.BOARD_X + 110f,
+                                        BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f + 60f,
+                                        Color.GOLD
+                                );
+                            }
+
+                            int currentScoreNow = scoreManager.getCurrentScore();
+                            if ((currentMode == GameMode.CLASSIC || currentMode == GameMode.QUEST)
+                                    && (currentScoreNow / 1500) > (prevScore / 1500)) {
+                                if (board.sealRandomOccupiedTile()) {
+                                    boardRenderer.spawnFloatingText(
+                                            "UBIN TERSEGEL!",
+                                            BoardRenderer.BOARD_X + 200f,
+                                            BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f - 40f,
+                                            Color.ORANGE
+                                    );
+                                }
                             }
 
                             int[] clearedVals = clearResult.getClearedTileValues();

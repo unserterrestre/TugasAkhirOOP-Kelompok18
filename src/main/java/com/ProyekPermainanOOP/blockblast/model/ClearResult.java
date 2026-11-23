@@ -1,27 +1,41 @@
-package src.main.java.com.ProyekPermainanOOP.blockblast.model;
+package com.ProyekPermainanOOP.blockblast.model;
 
-/**
- * Objek pembawa data (immutable DTO) hasil penghapusan baris dan kolom penuh
- * untuk kebutuhan perhitungan skor serta pemicu animasi efek Mahjong.
- */
 public class ClearResult {
     private final int linesCleared;
     private final int[] clearedRows;
     private final int[] clearedCols;
-    private final int[][] clearedCells; // Setiap elemen berformat {row, col}
+    private final int[][] clearedCells;
+    private final int[] clearedTileValues;
+    private final boolean specialTriggered;
+    private final String synergyName;
+    private final int synergyBonusScore;
+    private final int synergyBonusLives;
 
     public ClearResult(int linesCleared, int[] clearedRows, int[] clearedCols, int[][] clearedCells) {
-        if (linesCleared < 0) {
-            throw new IllegalArgumentException("Jumlah garis terhapus tidak boleh negatif.");
-        }
+        this(linesCleared, clearedRows, clearedCols, clearedCells, new int[0], false, "", 0, 0);
+    }
+
+    public ClearResult(int linesCleared, int[] clearedRows, int[] clearedCols, int[][] clearedCells,
+                       int[] clearedTileValues, boolean specialTriggered) {
+        this(linesCleared, clearedRows, clearedCols, clearedCells, clearedTileValues, specialTriggered, "", 0, 0);
+    }
+
+    public ClearResult(int linesCleared, int[] clearedRows, int[] clearedCols, int[][] clearedCells,
+                       int[] clearedTileValues, boolean specialTriggered,
+                       String synergyName, int synergyBonusScore, int synergyBonusLives) {
         this.linesCleared = linesCleared;
-        this.clearedRows = (clearedRows != null) ? clearedRows.clone() : new int[0];
-        this.clearedCols = (clearedCols != null) ? clearedCols.clone() : new int[0];
-        this.clearedCells = deepCopyCells(clearedCells);
+        this.clearedRows = clearedRows;
+        this.clearedCols = clearedCols;
+        this.clearedCells = clearedCells;
+        this.clearedTileValues = clearedTileValues;
+        this.specialTriggered = specialTriggered;
+        this.synergyName = (synergyName != null) ? synergyName : "";
+        this.synergyBonusScore = synergyBonusScore;
+        this.synergyBonusLives = synergyBonusLives;
     }
 
     public static ClearResult empty() {
-        return new ClearResult(0, new int[0], new int[0], new int[0][0]);
+        return new ClearResult(0, new int[0], new int[0], new int[0][0], new int[0], false, "", 0, 0);
     }
 
     public int getLinesCleared() {
@@ -29,29 +43,42 @@ public class ClearResult {
     }
 
     public int[] getClearedRows() {
-        return clearedRows.clone();
+        return clearedRows;
     }
 
     public int[] getClearedCols() {
-        return clearedCols.clone();
+        return clearedCols;
     }
 
     public int[][] getClearedCells() {
-        return deepCopyCells(clearedCells);
+        return clearedCells;
+    }
+
+    public int[] getClearedTileValues() {
+        return clearedTileValues;
+    }
+
+    public boolean isSpecialTriggered() {
+        return specialTriggered;
+    }
+
+    public String getSynergyName() {
+        return synergyName;
+    }
+
+    public int getSynergyBonusScore() {
+        return synergyBonusScore;
+    }
+
+    public int getSynergyBonusLives() {
+        return synergyBonusLives;
+    }
+
+    public boolean hasSynergy() {
+        return synergyName != null && !synergyName.isEmpty();
     }
 
     public boolean hasClearedLines() {
-        return linesCleared > 0;
-    }
-
-    private static int[][] deepCopyCells(int[][] source) {
-        if (source == null) {
-            return new int[0][0];
-        }
-        int[][] copy = new int[source.length][];
-        for (int i = 0; i < source.length; i++) {
-            copy[i] = (source[i] != null) ? source[i].clone() : new int[0];
-        }
-        return copy;
+        return linesCleared > 0 || clearedCells.length > 0;
     }
 }
