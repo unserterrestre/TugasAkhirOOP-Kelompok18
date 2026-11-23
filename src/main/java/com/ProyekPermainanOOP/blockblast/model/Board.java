@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Mengelola papan permainan 8x8 (0 = kosong, 1 = terisi), validasi batas & benturan,
- * penempatan balok, penghapusan garis penuh simultan, serta deteksi Game Over.
+ * Mengelola papan permainan 8x8 (0 = kosong, 1 = terisi), validasi batas dan benturan,
+ * penempatan balok, penghapusan garis penuh secara simultan, serta pengecekan langkah valid.
  */
 public class Board {
     public static final int SIZE = 8;
@@ -15,6 +15,10 @@ public class Board {
         this.grid = new int[SIZE][SIZE];
     }
 
+    /**
+     * Memeriksa secara pure-read apakah balok dapat diletakkan dengan titik jangkar
+     * kiri-atas pada (row, col) tanpa mengubah isi papan.
+     */
     public boolean canPlace(Block block, int row, int col) {
         if (block == null) {
             return false;
@@ -42,6 +46,10 @@ public class Board {
         return true;
     }
 
+    /**
+     * Menempatkan balok pada posisi (row, col) jika valid.
+     * Jika tidak valid, papan tidak berubah dan mengembalikan false.
+     */
     public boolean placeBlock(Block block, int row, int col) {
         if (!canPlace(block, row, col)) {
             return false;
@@ -61,12 +69,17 @@ public class Board {
         return true;
     }
 
+    /**
+     * Mendeteksi seluruh baris dan kolom yang terisi penuh berdasarkan kondisi papan
+     * sebelum penghapusan, lalu mengosongkan semuanya secara simultan tanpa hitung ganda.
+     */
     public ClearResult clearLines() {
         boolean[] fullRows = new boolean[SIZE];
         boolean[] fullCols = new boolean[SIZE];
         List<Integer> rowIndices = new ArrayList<>();
         List<Integer> colIndices = new ArrayList<>();
 
+        // 1. Deteksi semua baris penuh
         for (int r = 0; r < SIZE; r++) {
             boolean rowFull = true;
             for (int c = 0; c < SIZE; c++) {
@@ -81,6 +94,7 @@ public class Board {
             }
         }
 
+        // 2. Deteksi semua kolom penuh dari keadaan papan yang sama
         for (int c = 0; c < SIZE; c++) {
             boolean colFull = true;
             for (int r = 0; r < SIZE; r++) {
@@ -100,6 +114,8 @@ public class Board {
             return ClearResult.empty();
         }
 
+        // 3. Kosongkan seluruh sel pada baris/kolom penuh secara simultan
+        // Sel perpotongan hanya diproses dan dicatat satu kali.
         List<int[]> uniqueClearedCells = new ArrayList<>();
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {
@@ -117,6 +133,10 @@ public class Board {
         return new ClearResult(totalLinesCleared, clearedRowsArr, clearedColsArr, clearedCellsArr);
     }
 
+    /**
+     * Memeriksa apakah terdapat minimal satu koordinat valid pada papan
+     * untuk menempatkan balok yang diberikan (digunakan untuk cek Game Over).
+     */
     public boolean hasValidMove(Block block) {
         if (block == null) {
             return false;
@@ -139,6 +159,10 @@ public class Board {
         return false;
     }
 
+    /**
+     * Mengembalikan snapshot deep-copy dari grid 8x8 untuk kebutuhan rendering
+     * atau penyimpanan state Command pattern.
+     */
     public int[][] getGridSnapshot() {
         int[][] snapshot = new int[SIZE][SIZE];
         for (int r = 0; r < SIZE; r++) {
@@ -147,6 +171,9 @@ public class Board {
         return snapshot;
     }
 
+    /**
+     * Memulihkan kondisi grid dari snapshot valid (mendukung fitur undo pada Command pattern).
+     */
     public void restoreSnapshot(int[][] snapshot) {
         if (snapshot == null || snapshot.length != SIZE) {
             throw new IllegalArgumentException("Snapshot papan harus berukuran 8x8.");
@@ -166,6 +193,9 @@ public class Board {
         }
     }
 
+    /**
+     * Mengosongkan seluruh isi papan menjadi 0 saat permainan dimulai ulang.
+     */
     public void reset() {
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {

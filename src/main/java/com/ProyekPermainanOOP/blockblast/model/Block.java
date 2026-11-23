@@ -2,7 +2,7 @@ package src.main.java.com.ProyekPermainanOOP.blockblast.model;
 
 /**
  * Merepresentasikan bentuk balok puzzle 2D dengan matriks 0 dan 1.
- * Bersifat immutable dan tidak dapat diputar sesuai aturan BAB II proposal.
+ * Bentuk bersifat immutable (tidak dapat diputar maupun dimodifikasi dari luar).
  */
 public class Block {
     private final int[][] shape;
@@ -49,6 +49,10 @@ public class Block {
         this.shape = deepCopy(shape);
     }
 
+    /**
+     * Mengembalikan salinan mendalam (deep copy) dari matriks bentuk balok
+     * agar pemanggil tidak dapat memodifikasi state internal objek.
+     */
     public int[][] getShape() {
         return deepCopy(this.shape);
     }

@@ -1,4 +1,4 @@
-package src.main.java.com.ProyekPermainanOOP.blockblast.scoring;
+package com.ProyekPermainanOOP.blockblast.scoring;
 
 public class ScoreManager {
     private static ScoreManager instance;
@@ -49,5 +49,10 @@ public class ScoreManager {
 
     public int getComboMultiplier() {
         return comboMultiplier;
+    }
+
+    public void restoreState(int score, int combo) {
+        this.currentScore = Math.max(0, score);
+        this.comboMultiplier = Math.max(1, combo);
     }
 }

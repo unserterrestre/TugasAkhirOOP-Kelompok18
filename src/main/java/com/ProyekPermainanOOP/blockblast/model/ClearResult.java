@@ -2,13 +2,13 @@ package src.main.java.com.ProyekPermainanOOP.blockblast.model;
 
 /**
  * Objek pembawa data (immutable DTO) hasil penghapusan baris dan kolom penuh
- * untuk perhitungan skor serta pemicu efek animasi Mahjong.
+ * untuk kebutuhan perhitungan skor serta pemicu animasi efek Mahjong.
  */
 public class ClearResult {
     private final int linesCleared;
     private final int[] clearedRows;
     private final int[] clearedCols;
-    private final int[][] clearedCells;
+    private final int[][] clearedCells; // Setiap elemen berformat {row, col}
 
     public ClearResult(int linesCleared, int[] clearedRows, int[] clearedCols, int[][] clearedCells) {
         if (linesCleared < 0) {
