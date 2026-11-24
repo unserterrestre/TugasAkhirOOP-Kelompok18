@@ -5,6 +5,7 @@ import com.ProyekPermainanOOP.blockblast.audio.SoundEffectManager;
 import com.ProyekPermainanOOP.blockblast.command.PlaceBlockCommand;
 import com.ProyekPermainanOOP.blockblast.graphics.BoardRenderer;
 import com.ProyekPermainanOOP.blockblast.graphics.GameAssets;
+import com.ProyekPermainanOOP.blockblast.graphics.MainMenuRenderer;
 import com.ProyekPermainanOOP.blockblast.input.DragDropManager;
 import com.ProyekPermainanOOP.blockblast.localization.LocalizationManager;
 import com.ProyekPermainanOOP.blockblast.model.Block;
@@ -27,6 +28,11 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 public class Main extends ApplicationAdapter {
 
+    private enum ScreenState {
+        MAIN_MENU,
+        PLAYING
+    }
+
     private static final float GAME_WIDTH = 720f;
     private static final float GAME_HEIGHT = 1000f;
     private static final int STARTING_LIVES = 3;
@@ -34,6 +40,7 @@ public class Main extends ApplicationAdapter {
 
     private ExtendViewport viewport;
     private BoardRenderer boardRenderer;
+    private MainMenuRenderer mainMenuRenderer;
     private BlockTray blockTray;
     private Board board;
     private DragDropManager dragDropManager;
@@ -45,6 +52,7 @@ public class Main extends ApplicationAdapter {
 
     private PlaceBlockCommand lastCommand;
     private GameMode currentMode;
+    private ScreenState currentScreen;
 
     private int lives;
     private float gameTimerSeconds;
@@ -60,6 +68,7 @@ public class Main extends ApplicationAdapter {
     public void create() {
         viewport = new ExtendViewport(GAME_WIDTH, GAME_HEIGHT);
         boardRenderer = new BoardRenderer();
+        mainMenuRenderer = new MainMenuRenderer();
         board = new Board();
         blockTray = new BlockTray(board);
         dragDropManager = new DragDropManager();
@@ -70,6 +79,7 @@ public class Main extends ApplicationAdapter {
         compendium = PusakaCompendium.getInstance();
 
         currentMode = GameMode.CLASSIC;
+        currentScreen = ScreenState.MAIN_MENU;
         compendiumOpen = false;
         initSessionState();
 
@@ -82,7 +92,18 @@ public class Main extends ApplicationAdapter {
         triggerAllTraySpawnAnimations();
         centerViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         setupInputProcessor();
-        checkNoMovesCondition();
+    }
+
+    private void startNewGameFromMenu() {
+        currentScreen = ScreenState.PLAYING;
+        restartGame();
+    }
+
+    private void returnToMainMenu() {
+        dragDropManager.cancelDrag();
+        compendiumOpen = false;
+        localization.setLanguageMenuOpen(false);
+        currentScreen = ScreenState.MAIN_MENU;
     }
 
     private void initSessionState() {
@@ -106,9 +127,11 @@ public class Main extends ApplicationAdapter {
     private void cycleGameMode() {
         GameMode[] modes = GameMode.values();
         currentMode = modes[(currentMode.ordinal() + 1) % modes.length];
-        restartGame();
-        boardRenderer.spawnFloatingText("MODE: " + localization.getModeName(currentMode), BoardRenderer.BOARD_X + 180f,
-                BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f + 40f, Color.GOLD);
+        if (currentScreen == ScreenState.PLAYING) {
+            restartGame();
+            boardRenderer.spawnFloatingText("MODE: " + localization.getModeName(currentMode), BoardRenderer.BOARD_X + 180f,
+                    BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f + 40f, Color.GOLD);
+        }
     }
 
     private void performUndo() {
@@ -156,6 +179,29 @@ public class Main extends ApplicationAdapter {
                     return true;
                 }
 
+                // Penanganan klik saat berada di layar MAIN_MENU
+                if (currentScreen == ScreenState.MAIN_MENU) {
+                    if (MainMenuRenderer.BTN_PLAY.contains(worldPos.x, worldPos.y)) {
+                        soundManager.playPlaceSound();
+                        startNewGameFromMenu();
+                        return true;
+                    }
+                    if (MainMenuRenderer.BTN_MODE.contains(worldPos.x, worldPos.y)) {
+                        soundManager.playPlaceSound();
+                        cycleGameMode();
+                        return true;
+                    }
+                    if (MainMenuRenderer.BTN_COMPENDIUM.contains(worldPos.x, worldPos.y)) {
+                        compendiumOpen = true;
+                        return true;
+                    }
+                    if (MainMenuRenderer.BTN_LANGUAGE.contains(worldPos.x, worldPos.y)) {
+                        localization.setLanguageMenuOpen(true);
+                        return true;
+                    }
+                    return true;
+                }
+
                 if (handleRightInfoCardClick(worldPos.x, worldPos.y)) {
                     return true;
                 }
@@ -183,7 +229,8 @@ public class Main extends ApplicationAdapter {
 
             @Override
             public boolean touchDragged(int screenX, int screenY, int pointer) {
-                if (localization.isLanguageMenuOpen() || compendiumOpen || !dragDropManager.isDragging()) {
+                if (currentScreen != ScreenState.PLAYING || localization.isLanguageMenuOpen()
+                        || compendiumOpen || !dragDropManager.isDragging()) {
                     return false;
                 }
                 Vector2 worldPos = viewport.unproject(new Vector2(screenX, screenY));
@@ -193,15 +240,13 @@ public class Main extends ApplicationAdapter {
 
             @Override
             public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-                if (localization.isLanguageMenuOpen() || compendiumOpen || !dragDropManager.isDragging()) {
+                if (currentScreen != ScreenState.PLAYING || localization.isLanguageMenuOpen()
+                        || compendiumOpen || !dragDropManager.isDragging()) {
                     return false;
                 }
                 Vector2 worldPos = viewport.unproject(new Vector2(screenX, screenY));
                 Block placedBlock = dragDropManager.getActiveBlock();
                 int usedSlot = dragDropManager.getSelectedSlotIndex();
-
-
-
 
                 dragDropManager.updateDragPosition(worldPos.x, worldPos.y, board);
                 if (placedBlock != null && dragDropManager.isPreviewValid()) {
@@ -362,6 +407,26 @@ public class Main extends ApplicationAdapter {
                     }
                     return true;
                 }
+
+                // Shortcut keyboard di MAIN_MENU
+                if (currentScreen == ScreenState.MAIN_MENU) {
+                    if (keycode == Input.Keys.ENTER || keycode == Input.Keys.SPACE) {
+                        startNewGameFromMenu();
+                        return true;
+                    }
+                    if (keycode == Input.Keys.G) {
+                        cycleGameMode();
+                        return true;
+                    }
+                    if (keycode == Input.Keys.M && musicPlayer != null) {
+                        musicPlayer.toggleMute();
+                        soundManager.setEnabled(!musicPlayer.isMuted());
+                        return true;
+                    }
+                    return false;
+                }
+
+                // Shortcut keyboard saat PLAYING
                 if (keycode == Input.Keys.G) {
                     cycleGameMode();
                     return true;
@@ -379,8 +444,12 @@ public class Main extends ApplicationAdapter {
                     soundManager.setEnabled(!musicPlayer.isMuted());
                     return true;
                 }
-                if (keycode == Input.Keys.ESCAPE && dragDropManager.isDragging()) {
-                    dragDropManager.cancelDrag();
+                if (keycode == Input.Keys.ESCAPE) {
+                    if (dragDropManager.isDragging()) {
+                        dragDropManager.cancelDrag();
+                    } else {
+                        returnToMainMenu();
+                    }
                     return true;
                 }
                 return false;
@@ -498,6 +567,74 @@ public class Main extends ApplicationAdapter {
     @Override
     public void render() {
         float delta = Gdx.graphics.getDeltaTime();
+
+        viewport.apply();
+        viewport.getCamera().position.set(GAME_WIDTH / 2f, GAME_HEIGHT / 2f, 0f);
+        viewport.getCamera().update();
+
+        Gdx.gl.glClearColor(0.05f, 0.22f, 0.17f, 1f);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
+
+        // Latar belakang & ubin Mahjong melayang tetap jalan di Menu maupun saat Main
+        boardRenderer.begin(viewport.getCamera().combined);
+        boardRenderer.drawBackground(worldW, worldH);
+        boardRenderer.end();
+
+        boardRenderer.drawBackgroundFlyingTiles(
+                viewport.getCamera().combined,
+                worldW,
+                worldH,
+                scoreManager.getComboMultiplier(),
+                scoreManager.getCurrentScore()
+        );
+
+        // Tampilan MAIN MENU
+        if (currentScreen == ScreenState.MAIN_MENU) {
+            Vector2 hoverWorld = viewport.unproject(new Vector2(Gdx.input.getX(), Gdx.input.getY()));
+            mainMenuRenderer.render(
+                    viewport.getCamera().combined,
+                    currentMode,
+                    scoreManager.getHighScore(),
+                    hoverWorld.x,
+                    hoverWorld.y,
+                    localization
+            );
+
+            // Jika modal Koleksi Pusaka atau Bahasa dibuka dari Main Menu
+            if (compendiumOpen || localization.isLanguageMenuOpen()) {
+                boardRenderer.begin(viewport.getCamera().combined);
+                boardRenderer.drawModalShapes(compendiumOpen);
+                boardRenderer.end();
+
+                boardRenderer.drawOverlay(
+                        viewport.getCamera().combined,
+                        worldW,
+                        worldH,
+                        board.getGridSnapshot(),
+                        blockTray,
+                        dragDropManager,
+                        scoreManager.getCurrentScore(),
+                        scoreManager.getHighScore(),
+                        scoreManager.getComboMultiplier(),
+                        lives,
+                        gameTimerSeconds,
+                        musicPlayer != null && musicPlayer.isMuted(),
+                        false,
+                        currentMode,
+                        questTargetTileId,
+                        questClearedCount,
+                        questGoalCount,
+                        undoRemaining,
+                        compendiumOpen
+                );
+            }
+            return;
+        }
+
+        // Tampilan PLAYING
         boolean paused = gameOver || localization.isLanguageMenuOpen() || compendiumOpen;
         if (!paused) {
             if (currentMode == GameMode.CLASSIC) {
@@ -512,29 +649,8 @@ public class Main extends ApplicationAdapter {
         }
         boardRenderer.updateAnimations(delta);
 
-        viewport.apply();
-        viewport.getCamera().position.set(GAME_WIDTH / 2f, GAME_HEIGHT / 2f, 0f);
-        viewport.getCamera().update();
-
-        Gdx.gl.glClearColor(0.05f, 0.22f, 0.17f, 1f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
         int selectedSlot = dragDropManager.isDragging() ? dragDropManager.getSelectedSlotIndex() : -1;
         int[][] gridSnapshot = board.getGridSnapshot();
-        float worldW = viewport.getWorldWidth();
-        float worldH = viewport.getWorldHeight();
-
-        boardRenderer.begin(viewport.getCamera().combined);
-        boardRenderer.drawBackground(worldW, worldH);
-        boardRenderer.end();
-
-        boardRenderer.drawBackgroundFlyingTiles(
-                viewport.getCamera().combined,
-                worldW,
-                worldH,
-                scoreManager.getComboMultiplier(),
-                scoreManager.getCurrentScore()
-        );
 
         boardRenderer.begin(viewport.getCamera().combined);
         boardRenderer.drawHudPanels(worldW);
@@ -581,6 +697,9 @@ public class Main extends ApplicationAdapter {
         }
         if (boardRenderer != null) {
             boardRenderer.dispose();
+        }
+        if (mainMenuRenderer != null) {
+            mainMenuRenderer.dispose();
         }
         GameAssets.dispose();
         System.out.println("Game ditutup.");

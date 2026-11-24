@@ -2,10 +2,12 @@ package com.ProyekPermainanOOP.blockblast.graphics;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 public class GameAssets {
     public static TextureRegion[] chineseCharTiles;
+    public static BitmapFont uiFont;
 
     public static void load() {
         String[] fileNames = {
