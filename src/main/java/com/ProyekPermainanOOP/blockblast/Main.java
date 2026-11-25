@@ -95,9 +95,9 @@ public class Main extends ApplicationAdapter {
     private void initSessionState() {
         lives = STARTING_LIVES;
         gameOver = false;
-        gamePaused = false;
         lastCommand = null;
         undoRemaining = MAX_UNDO_USES;
+        blockTray.setGameMode(currentMode);
 
         if (currentMode == GameMode.BLITZ) {
             gameTimerSeconds = 60f;
@@ -542,11 +542,11 @@ public class Main extends ApplicationAdapter {
 
     private void restartGame() {
         dragDropManager.cancelDrag();
+        initSessionState();
         board.reset();
         blockTray.resetTray(board);
         triggerAllTraySpawnAnimations();
         scoreManager.resetScore();
-        initSessionState();
         checkNoMovesCondition();
     }
 
@@ -555,7 +555,7 @@ public class Main extends ApplicationAdapter {
         float delta = Gdx.graphics.getDeltaTime();
         boolean paused = inMainMenu || gameOver || gamePaused || localization.isLanguageMenuOpen() || compendiumOpen;
         if (!paused) {
-            if (currentMode == GameMode.CLASSIC) {
+            if (currentMode == GameMode.CLASSIC || currentMode == GameMode.MIXED) {
                 gameTimerSeconds += delta;
             } else {
                 gameTimerSeconds -= delta;

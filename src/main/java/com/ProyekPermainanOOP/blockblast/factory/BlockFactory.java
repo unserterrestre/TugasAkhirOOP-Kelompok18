@@ -182,9 +182,20 @@ public class BlockFactory {
 
     public static int[][] buildMixedTileMapping(int[][] pattern) {
         int[][] tileMap = new int[pattern.length][pattern[0].length];
+        int primaryId = random.nextInt(TOTAL_MAHJONG_TILES) + 1;
+        int secondaryId = random.nextInt(TOTAL_MAHJONG_TILES) + 1;
+        while (secondaryId == primaryId) {
+            secondaryId = random.nextInt(TOTAL_MAHJONG_TILES) + 1;
+        }
+
         for (int r = 0; r < pattern.length; r++) {
             for (int c = 0; c < pattern[r].length; c++) {
-                tileMap[r][c] = (pattern[r][c] != 0) ? (random.nextInt(TOTAL_MAHJONG_TILES) + 1) : 0;
+                if (pattern[r][c] != 0) {
+                    // 65% karakter utama, 35% karakter kedua -> tetap mixed tapi gampang di-combo!
+                    tileMap[r][c] = (random.nextFloat() < 0.65f) ? primaryId : secondaryId;
+                } else {
+                    tileMap[r][c] = 0;
+                }
             }
         }
         return tileMap;

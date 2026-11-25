@@ -3,6 +3,7 @@ package com.ProyekPermainanOOP.blockblast.tray;
 import com.ProyekPermainanOOP.blockblast.factory.BlockFactory;
 import com.ProyekPermainanOOP.blockblast.model.Block;
 import com.ProyekPermainanOOP.blockblast.model.Board;
+import com.ProyekPermainanOOP.blockblast.model.GameMode;
 import com.ProyekPermainanOOP.blockblast.model.SpecialTileType;
 import com.badlogic.gdx.math.MathUtils;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ public class BlockTray {
     private static final int MAX_GENERATION_ATTEMPTS = 120;
 
     private final Block[] slots;
+    private GameMode currentMode = GameMode.CLASSIC;
 
     public BlockTray() {
         this.slots = new Block[TRAY_SIZE];
@@ -26,6 +28,21 @@ public class BlockTray {
         refillTray(board);
     }
 
+    public void setGameMode(GameMode mode) {
+        this.currentMode = (mode != null) ? mode : GameMode.CLASSIC;
+    }
+
+    public GameMode getGameMode() {
+        return currentMode;
+    }
+
+    private Block createCandidateBlock() {
+        if (currentMode == GameMode.MIXED) {
+            return BlockFactory.createMixedTileRandomBlock();
+        }
+        return BlockFactory.createRandomBlock();
+    }
+
     public void refillTray() {
         refillTray(null);
     }
@@ -33,7 +50,7 @@ public class BlockTray {
     public void refillTray(Board board) {
         if (board == null) {
             for (int i = 0; i < TRAY_SIZE; i++) {
-                slots[i] = BlockFactory.createRandomBlock();
+                slots[i] = createCandidateBlock();
             }
             return;
         }
@@ -90,7 +107,7 @@ public class BlockTray {
         List<Block> anyValidCandidates = new ArrayList<>();
 
         for (int attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
-            Block candidate = BlockFactory.createRandomBlock();
+            Block candidate = createCandidateBlock();
             if (!targetBoard.hasValidMove(candidate)) {
                 continue;
             }
@@ -125,7 +142,7 @@ public class BlockTray {
             return smallest;
         }
 
-        return BlockFactory.createRandomBlock();
+        return createCandidateBlock();
     }
 
     private boolean hasMatchingNeighborOpportunity(Board targetBoard, Block candidate) {

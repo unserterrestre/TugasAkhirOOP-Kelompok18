@@ -172,7 +172,51 @@ public class LocalizationManager {
         if (mode == GameMode.BLITZ) {
             return currentLanguage.blitzLabel;
         }
+        if (mode == GameMode.MIXED) {
+            return getMixedModeLabel();
+        }
         return currentLanguage.classicLabel;
+    }
+
+    private String getMixedModeLabel() {
+        switch (currentLanguage) {
+            case INDONESIA:
+            case MELAYU:
+                return "CAMPURAN";
+            case JAWA:
+            case SUNDA:
+                return "CAMPUR";
+            case ESPANOL:
+            case PORTUGUES:
+                return "MIXTO";
+            case FRANCAIS:
+                return "MIXTE";
+            case DEUTSCH:
+                return "GEMISCHT";
+            case ITALIANO:
+                return "MISTO";
+            case NEDERLANDS:
+                return "GEMENGD";
+            case POLSKI:
+                return "MIESZANY";
+            case TURKCE:
+                return "KARISIK";
+            case SVENSKA:
+            case NORSK:
+            case DANSK:
+                return "BLANDAD";
+            case SUOMI:
+                return "SEKOITETTU";
+            case TAGALOG:
+                return "HALO-HALO";
+            case VIETNAMESE:
+                return "HON HOP";
+            case SWAHILI:
+                return "MCHANGANYIKO";
+            case ENGLISH:
+            default:
+                return "MIXED";
+        }
     }
 
     public String formatCenterTopBar(int highScore, int combo, GameMode mode, int undoRemaining) {
