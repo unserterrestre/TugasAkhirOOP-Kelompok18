@@ -1,4 +1,4 @@
-package com.anandita_finpro.backend;
+package com.ProyekPermainanOOP.backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

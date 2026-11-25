@@ -1,7 +1,10 @@
 
-package com.pusaka.backend.model;
+package com.ProyekPermainanOOP.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "players")
@@ -12,9 +15,12 @@ public class PlayerAccount {
     private Long id;
 
     @Column(nullable = false, unique = true, length = 40)
+    @NotBlank
+    @Size(max = 40)
     private String username;
 
     @Column(nullable = false)
+    @NotBlank
     private String passwordHash;
 
     protected PlayerAccount() {}
@@ -32,6 +38,7 @@ public class PlayerAccount {
         return username;
     }
 
+    @JsonIgnore
     public String getPasswordHash() {
         return passwordHash;
     }
