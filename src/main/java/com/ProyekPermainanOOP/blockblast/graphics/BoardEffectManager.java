@@ -96,7 +96,7 @@ public class BoardEffectManager {
     }
 
     public void triggerLineClearAnimation(int[][] clearedCells, int earnedPoints, Color accentColor) {
-        if (clearedCells == null) {
+        if (clearedCells == null || clearedCells.length == 0) {
             return;
         }
         clearSurge = 1f;
@@ -104,30 +104,56 @@ public class BoardEffectManager {
         float sumY = 0f;
         int count = 0;
 
-        for (int r = 0; r < BoardMetrics.GRID_SIZE; r++) {
-            for (int c = 0; c < BoardMetrics.GRID_SIZE; c++) {
-                int tileId = clearedCells[r][c];
-                if (tileId > 0) {
-                    clearFlashes.add(new ClearFlash(r, c, 0.42f));
-                    float cx = BoardMetrics.BOARD_X + (c + 0.5f) * BoardMetrics.CELL;
-                    float cy = BoardMetrics.BOARD_Y + (BoardMetrics.GRID_SIZE - 0.5f - r) * BoardMetrics.CELL;
-                    sumX += cx;
-                    sumY += cy;
-                    count++;
+        boolean isFullGrid = clearedCells.length == BoardMetrics.GRID_SIZE
+                && clearedCells[0] != null
+                && clearedCells[0].length == BoardMetrics.GRID_SIZE;
 
-                    TextureRegion reg = BoardPalette.getTileRegion(tileId);
-                    if (reg != null) {
-                        float vx = MathUtils.random(-260f, 260f);
-                        float vy = MathUtils.random(180f, 460f);
-                        float vRot = MathUtils.random(-360f, 360f);
-                        burstTiles.add(new BurstTile(reg, cx, cy, vx, vy, vRot, 0.78f));
+        if (isFullGrid) {
+            for (int r = 0; r < BoardMetrics.GRID_SIZE; r++) {
+                for (int c = 0; c < BoardMetrics.GRID_SIZE; c++) {
+                    int tileId = clearedCells[r][c];
+                    if (tileId > 0) {
+                        addCellClearEffect(r, c, tileId);
+                        sumX += BoardMetrics.BOARD_X + (c + 0.5f) * BoardMetrics.CELL;
+                        sumY += BoardMetrics.BOARD_Y + (BoardMetrics.GRID_SIZE - 0.5f - r) * BoardMetrics.CELL;
+                        count++;
                     }
+                }
+            }
+        } else {
+            for (int[] entry : clearedCells) {
+                if (entry == null || entry.length < 2) {
+                    continue;
+                }
+                int r = entry[0];
+                int c = entry[1];
+                int tileId = (entry.length >= 3) ? entry[2] : 1;
+                if (r >= 0 && r < BoardMetrics.GRID_SIZE && c >= 0 && c < BoardMetrics.GRID_SIZE) {
+                    addCellClearEffect(r, c, tileId);
+                    sumX += BoardMetrics.BOARD_X + (c + 0.5f) * BoardMetrics.CELL;
+                    sumY += BoardMetrics.BOARD_Y + (BoardMetrics.GRID_SIZE - 0.5f - r) * BoardMetrics.CELL;
+                    count++;
                 }
             }
         }
 
         if (count > 0 && earnedPoints > 0) {
             spawnFloatingText("+" + earnedPoints, (sumX / count) - 45f, (sumY / count) + 12f, accentColor);
+        }
+    }
+
+    private void addCellClearEffect(int r, int c, int tileId) {
+        clearFlashes.add(new ClearFlash(r, c, 0.42f));
+        if (tileId > 0) {
+            float cx = BoardMetrics.BOARD_X + (c + 0.5f) * BoardMetrics.CELL;
+            float cy = BoardMetrics.BOARD_Y + (BoardMetrics.GRID_SIZE - 0.5f - r) * BoardMetrics.CELL;
+            TextureRegion reg = BoardPalette.getTileRegion(tileId);
+            if (reg != null) {
+                float vx = MathUtils.random(-260f, 260f);
+                float vy = MathUtils.random(180f, 460f);
+                float vRot = MathUtils.random(-360f, 360f);
+                burstTiles.add(new BurstTile(reg, cx, cy, vx, vy, vRot, 0.78f));
+            }
         }
     }
 
