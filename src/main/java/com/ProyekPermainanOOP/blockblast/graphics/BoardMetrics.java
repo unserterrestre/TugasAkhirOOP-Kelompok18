@@ -27,15 +27,15 @@ public final class BoardMetrics {
     public static final float GAME_OVER_CARD_Y = BOARD_Y + (BOARD_PX - GAME_OVER_CARD_H) / 2f;
 
     public static final float PAUSE_MENU_W = 520f;
-    public static final float PAUSE_MENU_H = 490f;
+    public static final float PAUSE_MENU_H = 550f;
     public static final float PAUSE_MENU_X = (VIEW_W - PAUSE_MENU_W) / 2f;
     public static final float PAUSE_MENU_Y = (VIEW_H - PAUSE_MENU_H) / 2f;
-    public static final int PAUSE_BTN_COUNT = 4;
+    public static final int PAUSE_BTN_COUNT = 5;
     public static final float PAUSE_BTN_W = 420f;
-    public static final float PAUSE_BTN_H = 62f;
+    public static final float PAUSE_BTN_H = 56f;
     public static final float PAUSE_BTN_X = PAUSE_MENU_X + (PAUSE_MENU_W - PAUSE_BTN_W) / 2f;
-    public static final float PAUSE_BTN_FIRST_Y = PAUSE_MENU_Y + PAUSE_MENU_H - 165f;
-    public static final float PAUSE_BTN_GAP = 16f;
+    public static final float PAUSE_BTN_FIRST_Y = PAUSE_MENU_Y + PAUSE_MENU_H - 155f;
+    public static final float PAUSE_BTN_GAP = 14f;
 
     public static final int LANG_COLS = 2;
     public static final int LANG_ROWS = 10;

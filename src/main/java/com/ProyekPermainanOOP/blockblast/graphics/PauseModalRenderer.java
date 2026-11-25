@@ -10,22 +10,24 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 public class PauseModalRenderer {
 
+    private static final Color EXIT_RED = new Color(0.92f, 0.28f, 0.30f, 1f);
+    private static final Color EXIT_BG_TOP = new Color(0.28f, 0.08f, 0.10f, 0.96f);
+    private static final Color EXIT_BG_BOTTOM = new Color(0.16f, 0.04f, 0.06f, 0.98f);
+
     private final LocalizationManager localization = LocalizationManager.getInstance();
 
     public void drawShapes(ShapeRenderer shape, boolean paused) {
         if (!paused) {
             return;
         }
-        shape.setColor(0f, 0f, 0f, 0.78f);
-        shape.rect(0f, 0f, BoardMetrics.VIEW_W, BoardMetrics.VIEW_H);
+
+        shape.setColor(0f, 0f, 0f, 0.68f);
+        shape.rect(-1200f, 0f, BoardMetrics.VIEW_W + 2400f, BoardMetrics.VIEW_H);
 
         float menuX = BoardMetrics.PAUSE_MENU_X;
         float menuY = BoardMetrics.PAUSE_MENU_Y;
         float menuW = BoardMetrics.PAUSE_MENU_W;
         float menuH = BoardMetrics.PAUSE_MENU_H;
-
-        shape.setColor(0f, 0f, 0f, 0.55f);
-        shape.rect(menuX + 8f, menuY - 10f, menuW, menuH);
 
         shape.setColor(BoardPalette.GOLD_ACCENT);
         shape.rect(menuX - 5f, menuY - 5f, menuW + 10f, menuH + 10f);
@@ -35,13 +37,15 @@ public class PauseModalRenderer {
         for (int i = 0; i < BoardMetrics.PAUSE_BTN_COUNT; i++) {
             float btnX = BoardMetrics.PAUSE_BTN_X;
             float btnY = BoardMetrics.getPauseButtonY(i);
-            Color borderColor = (i == 0) ? BoardPalette.MINT_ACCENT : BoardPalette.GOLD_ACCENT;
-            Color fillTop = (i == 0) ? BoardPalette.EMPTY_TOP : BoardPalette.PANEL_TOP;
+            boolean isExit = (i == 4);
 
-            shape.setColor(borderColor);
-            shape.rect(btnX - 2f, btnY - 2f, BoardMetrics.PAUSE_BTN_W + 4f, BoardMetrics.PAUSE_BTN_H + 4f);
-            shape.rect(btnX, btnY, BoardMetrics.PAUSE_BTN_W, BoardMetrics.PAUSE_BTN_H,
-                    BoardPalette.PANEL_BOTTOM, BoardPalette.PANEL_BOTTOM, fillTop, fillTop);
+            Color border = isExit ? EXIT_RED : (i == 0 ? BoardPalette.MINT_ACCENT : BoardPalette.GOLD_ACCENT);
+            Color top = isExit ? EXIT_BG_TOP : (i == 0 ? BoardPalette.EMPTY_TOP : BoardPalette.PANEL_TOP);
+            Color bottom = isExit ? EXIT_BG_BOTTOM : BoardPalette.PANEL_BOTTOM;
+
+            shape.setColor(border);
+            shape.rect(btnX - 2.5f, btnY - 2.5f, BoardMetrics.PAUSE_BTN_W + 5f, BoardMetrics.PAUSE_BTN_H + 5f);
+            shape.rect(btnX, btnY, BoardMetrics.PAUSE_BTN_W, BoardMetrics.PAUSE_BTN_H, bottom, bottom, top, top);
         }
     }
 
@@ -50,6 +54,7 @@ public class PauseModalRenderer {
         if (!paused) {
             return;
         }
+
         float menuX = BoardMetrics.PAUSE_MENU_X;
         float menuY = BoardMetrics.PAUSE_MENU_Y;
         float menuW = BoardMetrics.PAUSE_MENU_W;
@@ -57,34 +62,43 @@ public class PauseModalRenderer {
 
         bigFont.getData().setScale(2.35f * VectorFontFactory.BIG_BASE_SCALE);
         bigFont.setColor(BoardPalette.GOLD_ACCENT);
-        String header = "PERMAINAN DIJEDA";
-        glyphLayout.setText(bigFont, header);
-        bigFont.draw(batch, header, menuX + (menuW - glyphLayout.width) * 0.5f, menuY + menuH - 34f);
+        String title = "PERMAINAN DIJEDA";
+        glyphLayout.setText(bigFont, title);
+        bigFont.draw(batch, title, menuX + (menuW - glyphLayout.width) * 0.5f, menuY + menuH - 36f);
 
         String[] labels = {
                 "LANJUTKAN [P / ESC]",
                 "ULANG PERMAINAN [R]",
-                (muted ? "SUARA: MATI [M]" : "SUARA: NYALA [M]"),
-                "MODE: " + localization.getModeName(currentMode) + " [G]"
+                "SUARA: " + (muted ? "MATI [M]" : "NYALA [M]"),
+                "MODE: " + localization.getModeName(currentMode) + " [G]",
+                "KELUAR PERMAINAN"
         };
 
         hudFont.getData().setScale(1.62f * VectorFontFactory.HUD_BASE_SCALE);
         for (int i = 0; i < labels.length; i++) {
             float btnY = BoardMetrics.getPauseButtonY(i);
-            hudFont.setColor(i == 0 ? BoardPalette.MINT_ACCENT : Color.WHITE);
+            if (i == 4) {
+                hudFont.setColor(Color.SALMON);
+            } else if (i == 0) {
+                hudFont.setColor(BoardPalette.MINT_ACCENT);
+            } else {
+                hudFont.setColor(Color.WHITE);
+            }
             glyphLayout.setText(hudFont, labels[i]);
-            hudFont.draw(batch, labels[i],
-                    BoardMetrics.PAUSE_BTN_X + (BoardMetrics.PAUSE_BTN_W - glyphLayout.width) * 0.5f,
-                    btnY + 41f);
+            float tx = BoardMetrics.PAUSE_BTN_X + (BoardMetrics.PAUSE_BTN_W - glyphLayout.width) * 0.5f;
+            float ty = btnY + 37f;
+            hudFont.draw(batch, labels[i], tx, ty);
         }
 
         hudFont.getData().setScale(1.22f * VectorFontFactory.HUD_BASE_SCALE);
         hudFont.setColor(Color.LIGHT_GRAY);
         String hint = "Klik tombol di atas atau tekan P / ESC untuk kembali";
         glyphLayout.setText(hudFont, hint);
-        hudFont.draw(batch, hint, menuX + (menuW - glyphLayout.width) * 0.5f, menuY + 34f);
+        hudFont.draw(batch, hint, menuX + (menuW - glyphLayout.width) * 0.5f, menuY + 30f);
 
         hudFont.getData().setScale(1.45f * VectorFontFactory.HUD_BASE_SCALE);
         bigFont.getData().setScale(2.45f * VectorFontFactory.BIG_BASE_SCALE);
+        hudFont.setColor(Color.WHITE);
+        bigFont.setColor(Color.WHITE);
     }
 }
