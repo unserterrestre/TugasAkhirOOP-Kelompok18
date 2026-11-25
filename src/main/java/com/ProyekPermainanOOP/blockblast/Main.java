@@ -655,6 +655,7 @@ public class Main extends ApplicationAdapter {
         boardRenderer.begin(viewport.getCamera().combined);
         boardRenderer.drawHudPanels(worldW);
         boardRenderer.drawBoard(gridSnapshot);
+        boardRenderer.drawSealOverlays(board.getSealSnapshot());
         boardRenderer.drawPlacementGuidance(gridSnapshot, dragDropManager, localization.isLanguageMenuOpen() || compendiumOpen);
         boardRenderer.drawTray(blockTray, selectedSlot);
         boardRenderer.drawDraggedBlock(dragDropManager);

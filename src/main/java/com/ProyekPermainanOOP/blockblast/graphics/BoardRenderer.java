@@ -201,6 +201,42 @@ public class BoardRenderer implements Disposable {
         return new Vector2(col, row);
     }
 
+    public void drawSealOverlays(com.ProyekPermainanOOP.blockblast.model.CellSealState[][] sealSnapshot) {
+        if (sealSnapshot == null) {
+            return;
+        }
+
+        float cellSize = BOARD_PX / 8f;
+
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                com.ProyekPermainanOOP.blockblast.model.CellSealState state = sealSnapshot[r][c];
+                if (state == null || state == com.ProyekPermainanOOP.blockblast.model.CellSealState.NORMAL) {
+                    continue;
+                }
+
+                float x = BOARD_X + c * cellSize;
+                float y = BOARD_Y + (7 - r) * cellSize;
+                float pad = 3f;
+                float thick = 4f;
+
+                if (state == com.ProyekPermainanOOP.blockblast.model.CellSealState.SEALED) {
+                    shape.setColor(0.10f, 0.85f, 0.55f, 0.95f); // Hijau giok (butuh 2x hit)
+                } else {
+                    shape.setColor(0.96f, 0.38f, 0.15f, 0.95f); // Oranye retak (butuh 1x hit lagi)
+                }
+
+                shape.rect(x + pad, y + pad, cellSize - pad * 2, thick);
+                shape.rect(x + pad, y + cellSize - pad - thick, cellSize - pad * 2, thick);
+                shape.rect(x + pad, y + pad, thick, cellSize - pad * 2);
+                shape.rect(x + cellSize - pad - thick, y + pad, thick, cellSize - pad * 2);
+
+                float badgeSize = 12f;
+                shape.rect(x + cellSize - badgeSize - 6f, y + cellSize - badgeSize - 6f, badgeSize, badgeSize);
+            }
+        }
+    }
+
     @Override
     public void dispose() {
         shape.dispose();
