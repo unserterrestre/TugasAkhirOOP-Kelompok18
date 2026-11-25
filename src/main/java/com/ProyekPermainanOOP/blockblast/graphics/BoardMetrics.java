@@ -21,6 +21,22 @@ public final class BoardMetrics {
     public static final float TIME_CARD_H = 122f;
     public static final float INFO_CARD_H = 224f;
 
+    public static final float GAME_OVER_CARD_W = 560f;
+    public static final float GAME_OVER_CARD_H = 274f;
+    public static final float GAME_OVER_CARD_X = BOARD_X + (BOARD_PX - GAME_OVER_CARD_W) / 2f;
+    public static final float GAME_OVER_CARD_Y = BOARD_Y + (BOARD_PX - GAME_OVER_CARD_H) / 2f;
+
+    public static final float PAUSE_MENU_W = 520f;
+    public static final float PAUSE_MENU_H = 490f;
+    public static final float PAUSE_MENU_X = (VIEW_W - PAUSE_MENU_W) / 2f;
+    public static final float PAUSE_MENU_Y = (VIEW_H - PAUSE_MENU_H) / 2f;
+    public static final int PAUSE_BTN_COUNT = 4;
+    public static final float PAUSE_BTN_W = 420f;
+    public static final float PAUSE_BTN_H = 62f;
+    public static final float PAUSE_BTN_X = PAUSE_MENU_X + (PAUSE_MENU_W - PAUSE_BTN_W) / 2f;
+    public static final float PAUSE_BTN_FIRST_Y = PAUSE_MENU_Y + PAUSE_MENU_H - 165f;
+    public static final float PAUSE_BTN_GAP = 16f;
+
     public static final int LANG_COLS = 2;
     public static final int LANG_ROWS = 10;
     public static final float LANG_MENU_W = 540f;
@@ -44,11 +60,6 @@ public final class BoardMetrics {
     public static final float COMP_NAV_BTN_Y = COMPENDIUM_Y + 68f;
     public static final float COMP_PREV_BTN_X = COMPENDIUM_X + 36f;
     public static final float COMP_NEXT_BTN_X = COMPENDIUM_X + COMPENDIUM_W - 36f - COMP_NAV_BTN_W;
-
-    public static final float GAME_OVER_CARD_W = 540f;
-    public static final float GAME_OVER_CARD_H = 264f;
-    public static final float GAME_OVER_CARD_X = BOARD_X + (BOARD_PX - GAME_OVER_CARD_W) / 2f;
-    public static final float GAME_OVER_CARD_Y = BOARD_Y + (BOARD_PX - GAME_OVER_CARD_H) / 2f;
 
     private BoardMetrics() {
     }
@@ -75,6 +86,10 @@ public final class BoardMetrics {
 
     public static float getInfoRightCardY() {
         return getTopCardY() - 18f - INFO_CARD_H;
+    }
+
+    public static float getPauseButtonY(int index) {
+        return PAUSE_BTN_FIRST_Y - index * (PAUSE_BTN_H + PAUSE_BTN_GAP);
     }
 
     public static float getLanguageButtonX(int index) {

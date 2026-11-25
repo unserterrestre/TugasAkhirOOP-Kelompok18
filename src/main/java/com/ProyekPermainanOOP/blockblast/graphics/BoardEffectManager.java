@@ -6,21 +6,48 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 public class BoardEffectManager {
 
-    private static class CellFlash {
+    private static class ClearFlash {
         final int row;
         final int col;
-        float progress;
+        float timer;
+        final float duration;
 
-        CellFlash(int row, int col) {
+        ClearFlash(int row, int col, float duration) {
             this.row = row;
             this.col = col;
-            this.progress = 0f;
+            this.timer = duration;
+            this.duration = duration;
+        }
+    }
+
+    private static class BurstTile {
+        final TextureRegion region;
+        float x;
+        float y;
+        final float vx;
+        float vy;
+        float rotation;
+        final float vRot;
+        float timer;
+        final float duration;
+
+        BurstTile(TextureRegion region, float x, float y, float vx, float vy, float vRot, float duration) {
+            this.region = region;
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.rotation = 0f;
+            this.vRot = vRot;
+            this.timer = duration;
+            this.duration = duration;
         }
     }
 
@@ -28,184 +55,160 @@ public class BoardEffectManager {
         final String text;
         float x;
         float y;
-        float age;
-        final float duration = 0.95f;
         final Color color;
+        float timer;
+        final float duration;
 
-        FloatingText(String text, float x, float y, Color color) {
+        FloatingText(String text, float x, float y, Color color, float duration) {
             this.text = text;
             this.x = x;
             this.y = y;
-            this.age = 0f;
-            this.color = color.cpy();
-        }
-    }
-
-    private static class BurstTile {
-        float x;
-        float y;
-        float vx;
-        float vy;
-        float rotation;
-        float rotSpeed;
-        float size;
-        float age;
-        final float duration;
-        final int tileIndex;
-
-        BurstTile(float x, float y, float vx, float vy, float rotSpeed, float size, float duration, int tileIndex) {
-            this.x = x;
-            this.y = y;
-            this.vx = vx;
-            this.vy = vy;
-            this.rotation = MathUtils.random(0f, 360f);
-            this.rotSpeed = rotSpeed;
-            this.size = size;
-            this.age = 0f;
+            this.color = new Color(color);
+            this.timer = duration;
             this.duration = duration;
-            this.tileIndex = tileIndex;
         }
     }
 
-    private final List<CellFlash> flashes = new ArrayList<>();
-    private final List<FloatingText> floatingTexts = new ArrayList<>();
+    private final List<ClearFlash> clearFlashes = new ArrayList<>();
     private final List<BurstTile> burstTiles = new ArrayList<>();
-    private final float[] slotSpawnScale = {1f, 1f, 1f};
-    private final float[] slotSpawnAge = {0f, 0f, 0f};
+    private final List<FloatingText> floatingTexts = new ArrayList<>();
+    private final float[] slotSpawnTimers = new float[3];
     private float clearSurge = 0f;
 
     public void notifySlotSpawned(int slotIndex) {
-        if (slotIndex >= 0 && slotIndex < slotSpawnScale.length) {
-            slotSpawnAge[slotIndex] = 0.001f;
-            slotSpawnScale[slotIndex] = 0.25f;
+        if (slotIndex >= 0 && slotIndex < slotSpawnTimers.length) {
+            slotSpawnTimers[slotIndex] = 0.28f;
         }
     }
 
     public float getSlotSpawnScale(int slotIndex) {
-        if (slotIndex >= 0 && slotIndex < slotSpawnScale.length) {
-            return slotSpawnScale[slotIndex];
+        if (slotIndex < 0 || slotIndex >= slotSpawnTimers.length || slotSpawnTimers[slotIndex] <= 0f) {
+            return 1f;
         }
-        return 1f;
+        float p = 1f - (slotSpawnTimers[slotIndex] / 0.28f);
+        float c1 = 1.70158f;
+        float c3 = c1 + 1f;
+        return 1f + c3 * (float) Math.pow(p - 1f, 3) + c1 * (float) Math.pow(p - 1f, 2);
     }
 
     public float getClearSurge() {
         return clearSurge;
     }
 
-    public void triggerLineClearAnimation(int[][] clearedCells, int earnedPoints, Color textColor) {
+    public void triggerLineClearAnimation(int[][] clearedCells, int earnedPoints, Color accentColor) {
+        if (clearedCells == null) {
+            return;
+        }
         clearSurge = 1f;
-        if (clearedCells != null) {
-            for (int[] cell : clearedCells) {
-                if (cell != null && cell.length >= 2) {
-                    flashes.add(new CellFlash(cell[0], cell[1]));
+        float sumX = 0f;
+        float sumY = 0f;
+        int count = 0;
+
+        for (int r = 0; r < BoardMetrics.GRID_SIZE; r++) {
+            for (int c = 0; c < BoardMetrics.GRID_SIZE; c++) {
+                int tileId = clearedCells[r][c];
+                if (tileId > 0) {
+                    clearFlashes.add(new ClearFlash(r, c, 0.42f));
+                    float cx = BoardMetrics.BOARD_X + (c + 0.5f) * BoardMetrics.CELL;
+                    float cy = BoardMetrics.BOARD_Y + (BoardMetrics.GRID_SIZE - 0.5f - r) * BoardMetrics.CELL;
+                    sumX += cx;
+                    sumY += cy;
+                    count++;
+
+                    TextureRegion reg = BoardPalette.getTileRegion(tileId);
+                    if (reg != null) {
+                        float vx = MathUtils.random(-260f, 260f);
+                        float vy = MathUtils.random(180f, 460f);
+                        float vRot = MathUtils.random(-360f, 360f);
+                        burstTiles.add(new BurstTile(reg, cx, cy, vx, vy, vRot, 0.78f));
+                    }
                 }
             }
         }
-        if (earnedPoints > 0) {
-            floatingTexts.add(new FloatingText("+" + earnedPoints,
-                    BoardRenderer.BOARD_X + BoardRenderer.BOARD_PX / 2f - 36f,
-                    BoardRenderer.BOARD_Y + BoardRenderer.BOARD_PX / 2f,
-                    textColor));
-        }
 
-        for (int i = 0; i < 18; i++) {
-            int side = (i % 2 == 0) ? -1 : 1;
-            float startX = (side < 0) ? (BoardRenderer.BOARD_X - 10f) : (BoardRenderer.BOARD_X + BoardRenderer.BOARD_PX + 10f);
-            float startY = BoardRenderer.BOARD_Y + MathUtils.random(60f, BoardRenderer.BOARD_PX - 60f);
-            float vx = side * MathUtils.random(140f, 340f);
-            float vy = MathUtils.random(120f, 320f);
-            float rotSpeed = MathUtils.random(-260f, 260f);
-            float size = MathUtils.random(24f, 38f);
-            float duration = MathUtils.random(1.1f, 1.7f);
-            burstTiles.add(new BurstTile(startX, startY, vx, vy, rotSpeed, size, duration, i));
+        if (count > 0 && earnedPoints > 0) {
+            spawnFloatingText("+" + earnedPoints, (sumX / count) - 45f, (sumY / count) + 12f, accentColor);
         }
     }
 
     public void spawnFloatingText(String text, float x, float y, Color color) {
-        floatingTexts.add(new FloatingText(text, x, y, color));
+        floatingTexts.add(new FloatingText(text, x, y, color, 0.95f));
     }
 
     public void update(float delta) {
-        clearSurge = Math.max(0f, clearSurge - delta * 1.4f);
-
-        for (int i = 0; i < slotSpawnAge.length; i++) {
-            if (slotSpawnAge[i] > 0f) {
-                slotSpawnAge[i] += delta * 4.2f;
-                float t = Math.min(1f, slotSpawnAge[i]);
-                float bounce = 1f + 0.22f * (float) Math.sin(t * Math.PI) * (1f - t);
-                slotSpawnScale[i] = t * bounce;
-                if (t >= 1f) {
-                    slotSpawnAge[i] = 0f;
-                    slotSpawnScale[i] = 1f;
-                }
+        clearSurge = Math.max(0f, clearSurge - delta * 2.2f);
+        for (int i = 0; i < slotSpawnTimers.length; i++) {
+            if (slotSpawnTimers[i] > 0f) {
+                slotSpawnTimers[i] = Math.max(0f, slotSpawnTimers[i] - delta);
             }
         }
 
-        Iterator<CellFlash> flashIt = flashes.iterator();
+        Iterator<ClearFlash> flashIt = clearFlashes.iterator();
         while (flashIt.hasNext()) {
-            CellFlash cf = flashIt.next();
-            cf.progress += delta * 2.4f;
-            if (cf.progress >= 1f) {
+            ClearFlash f = flashIt.next();
+            f.timer -= delta;
+            if (f.timer <= 0f) {
                 flashIt.remove();
-            }
-        }
-
-        Iterator<FloatingText> textIt = floatingTexts.iterator();
-        while (textIt.hasNext()) {
-            FloatingText ft = textIt.next();
-            ft.age += delta;
-            ft.y += delta * 52f;
-            if (ft.age >= ft.duration) {
-                textIt.remove();
             }
         }
 
         Iterator<BurstTile> burstIt = burstTiles.iterator();
         while (burstIt.hasNext()) {
-            BurstTile bt = burstIt.next();
-            bt.age += delta;
-            bt.x += bt.vx * delta;
-            bt.y += bt.vy * delta;
-            bt.vy -= 280f * delta;
-            bt.rotation += bt.rotSpeed * delta;
-            if (bt.age >= bt.duration) {
+            BurstTile b = burstIt.next();
+            b.timer -= delta;
+            b.x += b.vx * delta;
+            b.y += b.vy * delta;
+            b.vy -= 980f * delta;
+            b.rotation += b.vRot * delta;
+            if (b.timer <= 0f) {
                 burstIt.remove();
+            }
+        }
+
+        Iterator<FloatingText> textIt = floatingTexts.iterator();
+        while (textIt.hasNext()) {
+            FloatingText t = textIt.next();
+            t.timer -= delta;
+            t.y += 72f * delta;
+            if (t.timer <= 0f) {
+                textIt.remove();
             }
         }
     }
 
     public void drawClearFlashes(ShapeRenderer shape) {
-        for (CellFlash cf : flashes) {
-            float alpha = Math.max(0f, 1f - cf.progress);
-            float shrink = cf.progress * (BoardRenderer.CELL * 0.55f);
-            float x = BoardRenderer.BOARD_X + cf.col * BoardRenderer.CELL + shrink * 0.5f;
-            float y = BoardRenderer.BOARD_Y + (BoardRenderer.GRID_SIZE - 1 - cf.row) * BoardRenderer.CELL + shrink * 0.5f;
-            float size = Math.max(4f, BoardRenderer.CELL - shrink);
-            shape.setColor(1f, 0.86f, 0.35f, alpha);
-            shape.rect(x, y, size, size);
+        for (ClearFlash f : clearFlashes) {
+            float alpha = Math.max(0f, f.timer / f.duration);
+            float expand = (1f - alpha) * 14f;
+            float x = BoardMetrics.BOARD_X + f.col * BoardMetrics.CELL - expand * 0.5f;
+            float y = BoardMetrics.BOARD_Y + (BoardMetrics.GRID_SIZE - 1 - f.row) * BoardMetrics.CELL - expand * 0.5f;
+            shape.setColor(1f, 0.94f, 0.65f, alpha * 0.72f);
+            shape.rect(x, y, BoardMetrics.CELL + expand, BoardMetrics.CELL + expand);
         }
     }
 
     public void drawBurstTiles(SpriteBatch batch) {
-        TextureRegion[] tiles = GameAssets.chineseCharTiles;
-        if (tiles == null || tiles.length == 0) {
-            return;
-        }
-        for (BurstTile bt : burstTiles) {
-            TextureRegion reg = tiles[bt.tileIndex % tiles.length];
-            float alpha = Math.max(0f, 1f - (bt.age / bt.duration));
-            batch.setColor(1f, 0.92f, 0.65f, alpha);
-            batch.draw(reg, bt.x - bt.size * 0.5f, bt.y - bt.size * 0.5f,
-                    bt.size * 0.5f, bt.size * 0.5f, bt.size, bt.size, 1f, 1f, bt.rotation);
+        for (BurstTile b : burstTiles) {
+            float alpha = Math.max(0f, b.timer / b.duration);
+            float size = (BoardMetrics.CELL - 16f) * (0.55f + 0.45f * alpha);
+            batch.setColor(1f, 1f, 1f, alpha);
+            batch.draw(b.region, b.x - size * 0.5f, b.y - size * 0.5f,
+                    size * 0.5f, size * 0.5f, size, size, 1f, 1f, b.rotation);
         }
         batch.setColor(Color.WHITE);
     }
 
-    public void drawFloatingTexts(SpriteBatch batch, BitmapFont font) {
-        for (FloatingText ft : floatingTexts) {
-            float alpha = Math.max(0f, 1f - (ft.age / ft.duration));
-            font.setColor(ft.color.r, ft.color.g, ft.color.b, alpha);
-            font.draw(batch, ft.text, ft.x, ft.y);
+    public void drawFloatingTexts(SpriteBatch batch, BitmapFont bigFont) {
+        for (FloatingText t : floatingTexts) {
+            float alpha = Math.max(0f, t.timer / t.duration);
+            float scale = (2.15f + (1f - alpha) * 0.45f) * VectorFontFactory.BIG_BASE_SCALE;
+            bigFont.getData().setScale(scale);
+            bigFont.setColor(0f, 0f, 0f, alpha * 0.75f);
+            bigFont.draw(batch, t.text, t.x + 2.5f, t.y - 2.5f);
+            bigFont.setColor(t.color.r, t.color.g, t.color.b, alpha);
+            bigFont.draw(batch, t.text, t.x, t.y);
         }
+        bigFont.getData().setScale(2.45f * VectorFontFactory.BIG_BASE_SCALE);
+        bigFont.setColor(Color.WHITE);
     }
 }

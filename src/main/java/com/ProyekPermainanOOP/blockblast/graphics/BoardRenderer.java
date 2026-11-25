@@ -2,12 +2,12 @@ package com.ProyekPermainanOOP.blockblast.graphics;
 
 import com.ProyekPermainanOOP.blockblast.input.DragDropManager;
 import com.ProyekPermainanOOP.blockblast.localization.LocalizationManager;
+import com.ProyekPermainanOOP.blockblast.model.CellSealState;
 import com.ProyekPermainanOOP.blockblast.model.GameMode;
 import com.ProyekPermainanOOP.blockblast.tray.BlockTray;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -44,8 +44,8 @@ public class BoardRenderer implements Disposable {
 
     private final ShapeRenderer shape = new ShapeRenderer();
     private final SpriteBatch batch = new SpriteBatch();
-    private final BitmapFont hudFont = new BitmapFont();
-    private final BitmapFont bigFont = new BitmapFont();
+    private final BitmapFont hudFont = VectorFontFactory.createHudFont();
+    private final BitmapFont bigFont = VectorFontFactory.createBigFont();
     private final GlyphLayout glyphLayout = new GlyphLayout();
 
     private final SideDecorationRenderer sideDecoration = new SideDecorationRenderer();
@@ -56,6 +56,7 @@ public class BoardRenderer implements Disposable {
     private final HudRenderer hudRenderer = new HudRenderer();
     private final LanguageModalRenderer languageModalRenderer = new LanguageModalRenderer();
     private final CompendiumModalRenderer compendiumModalRenderer = new CompendiumModalRenderer();
+    private final PauseModalRenderer pauseModalRenderer = new PauseModalRenderer();
     private final LocalizationManager localization = LocalizationManager.getInstance();
 
     private float elapsedAnimTime = 0f;
@@ -63,12 +64,8 @@ public class BoardRenderer implements Disposable {
     private int latestScore = 0;
 
     public BoardRenderer() {
-        hudFont.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        bigFont.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        hudFont.setUseIntegerPositions(false);
-        bigFont.setUseIntegerPositions(false);
-        hudFont.getData().setScale(1.45f);
-        bigFont.getData().setScale(2.45f);
+        hudFont.getData().setScale(1.45f * VectorFontFactory.HUD_BASE_SCALE);
+        bigFont.getData().setScale(2.45f * VectorFontFactory.BIG_BASE_SCALE);
     }
 
     public static float getLeftPanelX(float worldW) {
@@ -140,6 +137,44 @@ public class BoardRenderer implements Disposable {
         gridRenderer.drawShapes(shape, grid, elapsedAnimTime);
     }
 
+    public void drawSealOverlays(CellSealState[][] sealGrid) {
+        if (sealGrid == null) {
+            return;
+        }
+        float pulse = 0.65f + 0.35f * (float) Math.sin(elapsedAnimTime * 5f);
+        for (int r = 0; r < GRID_SIZE && r < sealGrid.length; r++) {
+            for (int c = 0; c < GRID_SIZE && c < sealGrid[r].length; c++) {
+                CellSealState state = sealGrid[r][c];
+                if (state == null || state == CellSealState.NORMAL) {
+                    continue;
+                }
+                float x = BOARD_X + c * CELL + 2.5f;
+                float y = BOARD_Y + (GRID_SIZE - 1 - r) * CELL + 2.5f;
+                float size = CELL - 5f;
+
+                if (state == CellSealState.SEALED) {
+                    shape.setColor(0.18f, 0.72f, 0.56f, 0.36f * pulse);
+                    shape.rect(x, y, size, size);
+                    shape.setColor(BoardPalette.MINT_ACCENT.r, BoardPalette.MINT_ACCENT.g, BoardPalette.MINT_ACCENT.b, 0.92f);
+                    shape.rect(x, y, size, 6f);
+                    shape.rect(x, y + size - 6f, size, 6f);
+                    shape.rect(x, y, 6f, size);
+                    shape.rect(x + size - 6f, y, 6f, size);
+                    shape.rect(x + size * 0.5f - 3f, y + 6f, 6f, size - 12f);
+                    shape.rect(x + 6f, y + size * 0.5f - 3f, size - 12f, 6f);
+                } else if (state == CellSealState.CRACKED) {
+                    shape.setColor(0.95f, 0.65f, 0.22f, 0.28f * pulse);
+                    shape.rect(x, y, size, size);
+                    shape.setColor(BoardPalette.GOLD_ACCENT.r, BoardPalette.GOLD_ACCENT.g, BoardPalette.GOLD_ACCENT.b, 0.90f);
+                    shape.rect(x, y, size, 5f);
+                    shape.rect(x, y + size - 5f, size, 5f);
+                    shape.rect(x, y, 5f, size);
+                    shape.rect(x + size - 5f, y, 5f, size);
+                }
+            }
+        }
+    }
+
     public void drawPlacementGuidance(int[][] grid, DragDropManager dragDropManager, boolean modalOpen) {
         guidanceRenderer.draw(shape, grid, dragDropManager, modalOpen, elapsedAnimTime);
     }
@@ -157,10 +192,16 @@ public class BoardRenderer implements Disposable {
     }
 
     public void drawModalShapes(boolean compendiumOpen) {
+        drawModalShapes(compendiumOpen, false);
+    }
+
+    public void drawModalShapes(boolean compendiumOpen, boolean gamePaused) {
         if (localization.isLanguageMenuOpen()) {
             languageModalRenderer.drawShapes(shape);
-        } else {
-            compendiumModalRenderer.drawShapes(shape, compendiumOpen);
+        } else if (compendiumOpen) {
+            compendiumModalRenderer.drawShapes(shape, true);
+        } else if (gamePaused) {
+            pauseModalRenderer.drawShapes(shape, true);
         }
     }
 
@@ -169,25 +210,49 @@ public class BoardRenderer implements Disposable {
                             float elapsedSeconds, boolean muted, boolean gameOver,
                             GameMode gameMode, int questTileId, int questCurrent, int questTarget,
                             int undoRemaining, boolean compendiumOpen) {
+        drawOverlay(projection, worldW, worldH, grid, tray, dragDropManager, score, highScore, combo, lives,
+                elapsedSeconds, muted, gameOver, gameMode, questTileId, questCurrent, questTarget,
+                undoRemaining, compendiumOpen, false);
+    }
+
+    public void drawOverlay(Matrix4 projection, float worldW, float worldH, int[][] grid, BlockTray tray,
+                            DragDropManager dragDropManager, int score, int highScore, int combo, int lives,
+                            float elapsedSeconds, boolean muted, boolean gameOver,
+                            GameMode gameMode, int questTileId, int questCurrent, int questTarget,
+                            int undoRemaining, boolean compendiumOpen, boolean gamePaused) {
         this.activeCombo = Math.max(1, combo);
         this.latestScore = score;
+
+        boolean modalOpen = localization.isLanguageMenuOpen() || compendiumOpen || gamePaused;
+
+        if (!modalOpen) {
+            batch.setProjectionMatrix(projection);
+            batch.begin();
+            effectManager.drawBurstTiles(batch);
+            gridRenderer.drawTiles(batch, grid);
+            trayBlockRenderer.drawTrayAndDraggedTiles(batch, tray, dragDropManager, effectManager, elapsedAnimTime);
+            batch.end();
+        }
+
+        if (gameOver && !modalOpen) {
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+            shape.setProjectionMatrix(projection);
+            shape.begin(ShapeRenderer.ShapeType.Filled);
+            hudRenderer.drawGameOverPanel(shape, true, false);
+            shape.end();
+        }
 
         batch.setProjectionMatrix(projection);
         batch.begin();
 
-        effectManager.drawBurstTiles(batch);
-
-        if (!localization.isLanguageMenuOpen() && !compendiumOpen) {
-            gridRenderer.drawTiles(batch, grid);
-            trayBlockRenderer.drawTrayAndDraggedTiles(batch, tray, dragDropManager, effectManager, elapsedAnimTime);
-        }
-
         hudRenderer.drawTexts(batch, hudFont, bigFont, glyphLayout, worldW, score, highScore, combo, lives,
                 elapsedSeconds, muted, gameOver, gameMode, questTileId, questCurrent, questTarget,
-                undoRemaining, compendiumOpen);
+                undoRemaining, compendiumOpen || gamePaused);
         effectManager.drawFloatingTexts(batch, bigFont);
         languageModalRenderer.drawTexts(batch, hudFont, bigFont, glyphLayout);
         compendiumModalRenderer.drawTexts(batch, hudFont, bigFont, glyphLayout, compendiumOpen);
+        pauseModalRenderer.drawTexts(batch, hudFont, bigFont, glyphLayout, gamePaused, muted, gameMode);
 
         batch.end();
     }
@@ -199,42 +264,6 @@ public class BoardRenderer implements Disposable {
             return null;
         }
         return new Vector2(col, row);
-    }
-
-    public void drawSealOverlays(com.ProyekPermainanOOP.blockblast.model.CellSealState[][] sealSnapshot) {
-        if (sealSnapshot == null) {
-            return;
-        }
-
-        float cellSize = BOARD_PX / 8f;
-
-        for (int r = 0; r < 8; r++) {
-            for (int c = 0; c < 8; c++) {
-                com.ProyekPermainanOOP.blockblast.model.CellSealState state = sealSnapshot[r][c];
-                if (state == null || state == com.ProyekPermainanOOP.blockblast.model.CellSealState.NORMAL) {
-                    continue;
-                }
-
-                float x = BOARD_X + c * cellSize;
-                float y = BOARD_Y + (7 - r) * cellSize;
-                float pad = 3f;
-                float thick = 4f;
-
-                if (state == com.ProyekPermainanOOP.blockblast.model.CellSealState.SEALED) {
-                    shape.setColor(0.10f, 0.85f, 0.55f, 0.95f); // Hijau giok (butuh 2x hit)
-                } else {
-                    shape.setColor(0.96f, 0.38f, 0.15f, 0.95f); // Oranye retak (butuh 1x hit lagi)
-                }
-
-                shape.rect(x + pad, y + pad, cellSize - pad * 2, thick);
-                shape.rect(x + pad, y + cellSize - pad - thick, cellSize - pad * 2, thick);
-                shape.rect(x + pad, y + pad, thick, cellSize - pad * 2);
-                shape.rect(x + cellSize - pad - thick, y + pad, thick, cellSize - pad * 2);
-
-                float badgeSize = 12f;
-                shape.rect(x + cellSize - badgeSize - 6f, y + cellSize - badgeSize - 6f, badgeSize, badgeSize);
-            }
-        }
     }
 
     @Override

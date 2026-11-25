@@ -84,10 +84,10 @@ public class HudRenderer {
         float rightX = BoardMetrics.getRightPanelX(worldW);
         float topY = BoardMetrics.getTopCardY();
 
-        hudFont.getData().setScale(1.65f);
+        hudFont.getData().setScale(1.65f * VectorFontFactory.HUD_BASE_SCALE);
         hudFont.setColor(BoardPalette.GOLD_ACCENT);
         hudFont.draw(batch, localization.getScoreLabel(), leftX + 20f, topY + BoardMetrics.SCORE_CARD_H - 18f);
-        bigFont.getData().setScale(2.75f);
+        bigFont.getData().setScale(2.75f * VectorFontFactory.BIG_BASE_SCALE);
         bigFont.setColor(Color.WHITE);
         bigFont.draw(batch, String.valueOf(score), leftX + 20f, topY + 56f);
 
@@ -105,7 +105,7 @@ public class HudRenderer {
         bigFont.draw(batch, timeStr, rightX + 20f, topY + 56f);
 
         float infoY = BoardMetrics.getInfoRightCardY();
-        hudFont.getData().setScale(1.42f);
+        hudFont.getData().setScale(1.42f * VectorFontFactory.HUD_BASE_SCALE);
         hudFont.setColor(BoardPalette.GOLD_ACCENT);
         hudFont.draw(batch, localization.getBestHeader(highScore, combo), rightX + 20f, infoY + BoardMetrics.INFO_CARD_H - 22f);
 
@@ -121,7 +121,7 @@ public class HudRenderer {
         float screenLeftX = (BoardMetrics.VIEW_W - worldW) * 0.5f + 26f;
         float screenRightX = (BoardMetrics.VIEW_W + worldW) * 0.5f - 26f;
 
-        hudFont.getData().setScale(1.85f);
+        hudFont.getData().setScale(1.85f * VectorFontFactory.HUD_BASE_SCALE);
         hudFont.setColor(BoardPalette.GOLD_ACCENT);
         String bottomLeftText = localization.formatBottomLeftControls(muted, gameMode, questCurrent, questTarget);
         hudFont.draw(batch, bottomLeftText, screenLeftX, 54f);
@@ -133,7 +133,7 @@ public class HudRenderer {
             }
         }
 
-        hudFont.getData().setScale(1.90f);
+        hudFont.getData().setScale(1.90f * VectorFontFactory.HUD_BASE_SCALE);
         hudFont.setColor(BoardPalette.MINT_ACCENT);
         String collectionText = localization.formatBottomRightCollection(PusakaCompendium.getInstance().getUnlockedCount(), 10);
         glyphLayout.setText(hudFont, collectionText);
@@ -143,8 +143,8 @@ public class HudRenderer {
             drawGameOverTexts(batch, hudFont, bigFont, glyphLayout, score);
         }
 
-        hudFont.getData().setScale(1.45f);
-        bigFont.getData().setScale(2.45f);
+        hudFont.getData().setScale(1.45f * VectorFontFactory.HUD_BASE_SCALE);
+        bigFont.getData().setScale(2.45f * VectorFontFactory.BIG_BASE_SCALE);
     }
 
     private void drawGameOverTexts(SpriteBatch batch, BitmapFont hudFont, BitmapFont bigFont,
@@ -155,7 +155,7 @@ public class HudRenderer {
         float cardH = BoardMetrics.GAME_OVER_CARD_H;
 
         String title = localization.getGameOverTitle();
-        bigFont.getData().setScale(2.35f);
+        bigFont.getData().setScale(2.35f * VectorFontFactory.BIG_BASE_SCALE);
         glyphLayout.setText(bigFont, title);
         float titleX = cardX + (cardW - glyphLayout.width) * 0.5f;
         float titleY = cardY + cardH - 30f;
@@ -166,7 +166,7 @@ public class HudRenderer {
         bigFont.draw(batch, title, titleX, titleY);
 
         String finalScoreLine = localization.getScoreLabel() + ": " + score;
-        bigFont.getData().setScale(2.05f);
+        bigFont.getData().setScale(2.05f * VectorFontFactory.BIG_BASE_SCALE);
         glyphLayout.setText(bigFont, finalScoreLine);
         float scoreX = cardX + (cardW - glyphLayout.width) * 0.5f;
         float scoreY = cardY + 144f;
@@ -177,7 +177,7 @@ public class HudRenderer {
         bigFont.draw(batch, finalScoreLine, scoreX, scoreY);
 
         String subtitle = localization.getGameOverSubtitle();
-        hudFont.getData().setScale(1.52f);
+        hudFont.getData().setScale(1.52f * VectorFontFactory.HUD_BASE_SCALE);
         glyphLayout.setText(hudFont, subtitle);
         float subX = cardX + (cardW - glyphLayout.width) * 0.5f;
         float subY = cardY + 46f;

@@ -44,7 +44,7 @@ public class LanguageModalRenderer {
         LocalizationManager.Language[] languages = LocalizationManager.Language.values();
         LocalizationManager.Language active = localization.getCurrentLanguage();
 
-        bigFont.getData().setScale(2.15f);
+        bigFont.getData().setScale(2.15f * VectorFontFactory.BIG_BASE_SCALE);
         bigFont.setColor(BoardPalette.GOLD_ACCENT);
         String menuHeader = localization.getLanguageMenuTitle() + " (20)";
         glyphLayout.setText(bigFont, menuHeader);
@@ -52,7 +52,7 @@ public class LanguageModalRenderer {
                 BoardMetrics.LANG_MENU_X + (BoardMetrics.LANG_MENU_W - glyphLayout.width) * 0.5f,
                 BoardMetrics.LANG_MENU_Y + BoardMetrics.LANG_MENU_H - 22f);
 
-        hudFont.getData().setScale(1.12f);
+        hudFont.getData().setScale(1.12f * VectorFontFactory.HUD_BASE_SCALE);
         for (int i = 0; i < languages.length; i++) {
             float btnX = BoardMetrics.getLanguageButtonX(i);
             float btnY = BoardMetrics.getLanguageButtonY(i);
@@ -62,13 +62,13 @@ public class LanguageModalRenderer {
             hudFont.draw(batch, label, btnX + 12f, btnY + 25f);
         }
 
-        hudFont.getData().setScale(1.15f);
+        hudFont.getData().setScale(1.15f * VectorFontFactory.HUD_BASE_SCALE);
         hudFont.setColor(Color.LIGHT_GRAY);
         glyphLayout.setText(hudFont, localization.getLanguageMenuHint());
         hudFont.draw(batch, localization.getLanguageMenuHint(),
                 BoardMetrics.LANG_MENU_X + (BoardMetrics.LANG_MENU_W - glyphLayout.width) * 0.5f,
                 BoardMetrics.LANG_MENU_Y + 30f);
-        hudFont.getData().setScale(1.45f);
-        bigFont.getData().setScale(2.45f);
+        hudFont.getData().setScale(1.45f * VectorFontFactory.HUD_BASE_SCALE);
+        bigFont.getData().setScale(2.45f * VectorFontFactory.BIG_BASE_SCALE);
     }
 }

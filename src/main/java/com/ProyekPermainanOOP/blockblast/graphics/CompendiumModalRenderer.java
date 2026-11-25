@@ -63,7 +63,7 @@ public class CompendiumModalRenderer {
         int pageNum = compendium.getCurrentPageIndex() + 1;
         int totalPages = compendium.getEntries().size();
 
-        bigFont.getData().setScale(2.25f);
+        bigFont.getData().setScale(2.25f * VectorFontFactory.BIG_BASE_SCALE);
         bigFont.setColor(BoardPalette.GOLD_ACCENT);
         String header = localization.getCompendiumTitle() + " (" + pageNum + "/" + totalPages + ")";
         glyphLayout.setText(bigFont, header);
@@ -80,7 +80,7 @@ public class CompendiumModalRenderer {
             batch.draw(reg, tileBoxX + 14f, tileBoxY + 14f, tileBoxSize - 28f, tileBoxSize - 28f);
         }
 
-        bigFont.getData().setScale(1.95f);
+        bigFont.getData().setScale(1.95f * VectorFontFactory.BIG_BASE_SCALE);
         String pinyinTitle = entry.getPinyin() + (entry.isUnlocked() ? " - " + lore.getTitle() : "");
         bigFont.setColor(entry.isUnlocked() ? BoardPalette.MINT_ACCENT : Color.LIGHT_GRAY);
         glyphLayout.setText(bigFont, pinyinTitle);
@@ -94,7 +94,7 @@ public class CompendiumModalRenderer {
         float descBoxH = 236f;
 
         if (entry.isUnlocked()) {
-            hudFont.getData().setScale(1.52f);
+            hudFont.getData().setScale(1.52f * VectorFontFactory.HUD_BASE_SCALE);
             hudFont.setColor(Color.WHITE);
             String[] lines = lore.getLines();
             float lineY = descBoxY + descBoxH - 36f;
@@ -104,20 +104,20 @@ public class CompendiumModalRenderer {
                 lineY -= 44f;
             }
         } else {
-            bigFont.getData().setScale(1.75f);
+            bigFont.getData().setScale(1.75f * VectorFontFactory.BIG_BASE_SCALE);
             bigFont.setColor(Color.LIGHT_GRAY);
             String lockMsg = localization.getLockedHeader(entry.getClearedCount());
             glyphLayout.setText(bigFont, lockMsg);
             bigFont.draw(batch, lockMsg, descBoxX + (descBoxW - glyphLayout.width) * 0.5f, descBoxY + descBoxH * 0.5f + 26f);
 
-            hudFont.getData().setScale(1.34f);
+            hudFont.getData().setScale(1.34f * VectorFontFactory.HUD_BASE_SCALE);
             hudFont.setColor(BoardPalette.GOLD_ACCENT);
             String lockSub = localization.getLockedSubLabel();
             glyphLayout.setText(hudFont, lockSub);
             hudFont.draw(batch, lockSub, descBoxX + (descBoxW - glyphLayout.width) * 0.5f, descBoxY + descBoxH * 0.5f - 22f);
         }
 
-        hudFont.getData().setScale(1.42f);
+        hudFont.getData().setScale(1.42f * VectorFontFactory.HUD_BASE_SCALE);
         hudFont.setColor(BoardPalette.GOLD_ACCENT);
         String prevText = localization.getPrevButtonLabel();
         glyphLayout.setText(hudFont, prevText);
@@ -131,14 +131,14 @@ public class CompendiumModalRenderer {
                 BoardMetrics.COMP_NEXT_BTN_X + (BoardMetrics.COMP_NAV_BTN_W - glyphLayout.width) * 0.5f,
                 BoardMetrics.COMP_NAV_BTN_Y + 37f);
 
-        hudFont.getData().setScale(1.18f);
+        hudFont.getData().setScale(1.18f * VectorFontFactory.HUD_BASE_SCALE);
         hudFont.setColor(Color.LIGHT_GRAY);
         String closeHint = localization.getCompendiumHint();
         glyphLayout.setText(hudFont, closeHint);
         hudFont.draw(batch, closeHint,
                 BoardMetrics.COMPENDIUM_X + (BoardMetrics.COMPENDIUM_W - glyphLayout.width) * 0.5f,
                 BoardMetrics.COMPENDIUM_Y + 36f);
-        hudFont.getData().setScale(1.45f);
-        bigFont.getData().setScale(2.45f);
+        hudFont.getData().setScale(1.45f * VectorFontFactory.HUD_BASE_SCALE);
+        bigFont.getData().setScale(2.45f * VectorFontFactory.BIG_BASE_SCALE);
     }
 }
