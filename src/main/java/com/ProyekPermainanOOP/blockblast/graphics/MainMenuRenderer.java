@@ -87,12 +87,12 @@ public class MainMenuRenderer {
         BitmapFont font = getFont();
 
         // Judul Utama
-        font.getData().setScale(2.3f);
+        font.getData().setScale(3.4f);
         font.setColor(new Color(0.96f, 0.80f, 0.32f, 1f));
         drawCenteredText(font, "P U S A K A", 360f, 825f);
 
         // Subjudul
-        font.getData().setScale(1.1f);
+        font.getData().setScale(1.4f);
         font.setColor(new Color(0.78f, 0.92f, 0.86f, 1f));
         drawCenteredText(font, "MAHJONG CALLIGRAPHY PUZZLE", 360f, 770f);
 
@@ -102,31 +102,31 @@ public class MainMenuRenderer {
         drawCenteredText(font, "HIGH SCORE : " + highScore, 360f, 695f);
 
         // Petunjuk singkat
-        font.getData().setScale(0.9f);
+        font.getData().setScale(1.15f);
         font.setColor(new Color(0.72f, 0.85f, 0.80f, 1f));
         drawCenteredText(font, "Cocokkan 4 ubin sebaris atau 5 ubin berkelompok", 360f, 640f);
         drawCenteredText(font, "Gabungkan aksara Hanzi untuk memicu Sinergi!", 360f, 612f);
 
         // Teks Tombol
-        font.getData().setScale(1.35f);
+        font.getData().setScale(1.65f);
         font.setColor(Color.WHITE);
         drawCenteredText(font, "MULAI BERMAIN", 360f, BTN_PLAY.y + 48f);
 
-        font.getData().setScale(1.15f);
+        font.getData().setScale(1.4f);
         font.setColor(Color.GOLD);
         String modeLabel = (localization != null) ? localization.getModeName(selectedMode) : selectedMode.name();
         drawCenteredText(font, "MODE: " + modeLabel, 360f, BTN_MODE.y + 41f);
 
-        font.getData().setScale(1.1f);
+        font.getData().setScale(1.35f);
         font.setColor(Color.WHITE);
         drawCenteredText(font, "KOLEKSI PUSAKA [K]", 360f, BTN_COMPENDIUM.y + 39f);
 
-        font.getData().setScale(1.05f);
+        font.getData().setScale(1.3f);
         font.setColor(new Color(0.85f, 0.95f, 0.90f, 1f));
         drawCenteredText(font, "GANTI BAHASA [L]", 360f, BTN_LANGUAGE.y + 36f);
 
         // Footer shortcut keyboard
-        font.getData().setScale(0.85f);
+        font.getData().setScale(1.05f);
         font.setColor(new Color(0.65f, 0.78f, 0.73f, 1f));
         drawCenteredText(font, "Tekan [ENTER] untuk Mulai  |  [ESC] di Game untuk Menu", 360f, 142f);
 
