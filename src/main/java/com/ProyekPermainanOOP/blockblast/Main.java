@@ -1,8 +1,8 @@
-
 package com.ProyekPermainanOOP.blockblast;
 
 import com.ProyekPermainanOOP.blockblast.achievement.AchievementManager;
 import com.ProyekPermainanOOP.blockblast.achievement.AchievementRenderer;
+import com.ProyekPermainanOOP.blockblast.achievement.AchievementListRenderer;
 import com.ProyekPermainanOOP.blockblast.audio.BackgroundMusicPlayer;
 import com.ProyekPermainanOOP.blockblast.audio.SoundEffectManager;
 import com.ProyekPermainanOOP.blockblast.command.PlaceBlockCommand;
@@ -52,6 +52,8 @@ public class Main extends ApplicationAdapter {
     // Achievement System
     private AchievementManager achievementManager;
     private AchievementRenderer achievementRenderer;
+    private AchievementListRenderer achievementListRenderer;
+    private boolean achievementListOpen;
 
     private PlaceBlockCommand lastCommand;
     private GameMode currentMode;
@@ -85,6 +87,8 @@ public class Main extends ApplicationAdapter {
         // Inisialisasi Achievement System
         achievementManager = new AchievementManager();
         achievementRenderer = new AchievementRenderer();
+        achievementListRenderer = new AchievementListRenderer();
+        achievementListOpen = false;
 
         currentMode = GameMode.CLASSIC;
         inMainMenu = true;
@@ -235,6 +239,20 @@ public class Main extends ApplicationAdapter {
                 }
 
                 if (inMainMenu) {
+                    if (achievementListOpen) {
+                        if (AchievementListRenderer.BACK_BUTTON.contains(
+                                worldPos.x, worldPos.y)) {
+                            achievementListOpen = false;
+                        }
+                        return true;
+                    }
+
+                    if (MainMenuRenderer.BTN_ACHIEVEMENTS.contains(
+                            worldPos.x, worldPos.y)) {
+                        achievementListOpen = true;
+                        return true;
+                    }
+
                     if (MainMenuRenderer.BTN_PLAY.contains(
                             worldPos.x,
                             worldPos.y
@@ -548,7 +566,6 @@ public class Main extends ApplicationAdapter {
 
                 return true;
             }
-
             @Override
             public boolean keyDown(int keycode) {
                 if (keycode == Input.Keys.L) {
@@ -640,7 +657,22 @@ public class Main extends ApplicationAdapter {
                     return true;
                 }
 
+                if (inMainMenu && achievementListOpen) {
+                    if (keycode == Input.Keys.ESCAPE
+                            || keycode == Input.Keys.ENTER
+                            || keycode == Input.Keys.BACKSPACE) {
+                        achievementListOpen = false;
+                        return true;
+                    }
+                    return true;
+                }
+
                 if (inMainMenu) {
+                    if (keycode == Input.Keys.A) {
+                        achievementListOpen = true;
+                        return true;
+                    }
+
                     if (keycode == Input.Keys.ENTER
                             || keycode == Input.Keys.SPACE) {
                         inMainMenu = false;
@@ -951,7 +983,6 @@ public class Main extends ApplicationAdapter {
 
         checkNoMovesCondition();
     }
-
     @Override
     public void render() {
         float delta = Gdx.graphics.getDeltaTime();
@@ -1044,6 +1075,14 @@ public class Main extends ApplicationAdapter {
                     hoverWorld.y,
                     localization
             );
+
+            if (achievementListOpen) {
+                achievementListRenderer.render(
+                        viewport.getCamera().combined,
+                        achievementManager
+                );
+                return;
+            }
 
             if (localization.isLanguageMenuOpen()
                     || compendiumOpen) {
@@ -1172,6 +1211,10 @@ public class Main extends ApplicationAdapter {
 
         if (achievementRenderer != null) {
             achievementRenderer.dispose();
+        }
+
+        if (achievementListRenderer != null) {
+            achievementListRenderer.dispose();
         }
 
         GameAssets.dispose();

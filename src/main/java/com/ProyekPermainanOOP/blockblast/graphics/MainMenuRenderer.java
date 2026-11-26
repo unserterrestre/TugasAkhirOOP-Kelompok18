@@ -32,7 +32,8 @@ public class MainMenuRenderer implements Disposable {
     public static final Rectangle BTN_MODE = new Rectangle(BTN_X, FIRST_BTN_Y - (BTN_H + BTN_GAP), BTN_W, BTN_H);
     public static final Rectangle BTN_COMPENDIUM = new Rectangle(BTN_X, FIRST_BTN_Y - 2f * (BTN_H + BTN_GAP), BTN_W, BTN_H);
     public static final Rectangle BTN_LANGUAGE = new Rectangle(BTN_X, FIRST_BTN_Y - 3f * (BTN_H + BTN_GAP), BTN_W, BTN_H);
-    public static final Rectangle BTN_EXIT = new Rectangle(BTN_X, FIRST_BTN_Y - 4f * (BTN_H + BTN_GAP), BTN_W, BTN_H);
+    public static final Rectangle BTN_ACHIEVEMENTS = new Rectangle(BTN_X, FIRST_BTN_Y - 4f * (BTN_H + BTN_GAP), BTN_W, BTN_H);
+    public static final Rectangle BTN_EXIT = new Rectangle(BTN_X, FIRST_BTN_Y - 5f * (BTN_H + BTN_GAP), BTN_W, BTN_H);
 
     private static final Color JADE_DARK = new Color(0.03f, 0.16f, 0.12f, 1f);
     private static final Color JADE_SCALE = new Color(0.11f, 0.62f, 0.46f, 1f);
@@ -317,12 +318,12 @@ public class MainMenuRenderer implements Disposable {
         shape.rect(PANEL_X + PANEL_W - cornerSize + 5f, PANEL_Y - 5f, cornerSize, cornerSize);
 
         float pulse = 0.5f + 0.5f * MathUtils.sin(animTime * 4.5f);
-        Rectangle[] buttons = {BTN_PLAY, BTN_MODE, BTN_COMPENDIUM, BTN_LANGUAGE, BTN_EXIT};
+        Rectangle[] buttons = {BTN_PLAY, BTN_MODE, BTN_COMPENDIUM, BTN_LANGUAGE, BTN_ACHIEVEMENTS, BTN_EXIT};
 
         for (int i = 0; i < buttons.length; i++) {
             Rectangle btn = buttons[i];
             boolean hovered = btn.contains(hoverX, hoverY);
-            boolean isExit = (i == 4);
+            boolean isExit = (i == 5);
 
             Color border;
             Color top;
@@ -388,16 +389,17 @@ public class MainMenuRenderer implements Disposable {
                 "MODE: " + localization.getModeName(selectedMode) + " [G]",
                 "KOLEKSI PUSAKA [K]",
                 "PILIH BAHASA [L]",
+                "PENCAPAIAN [A]",
                 "KELUAR PERMAINAN [ESC]"
         };
-        Rectangle[] buttons = {BTN_PLAY, BTN_MODE, BTN_COMPENDIUM, BTN_LANGUAGE, BTN_EXIT};
+        Rectangle[] buttons = {BTN_PLAY, BTN_MODE, BTN_COMPENDIUM, BTN_LANGUAGE, BTN_ACHIEVEMENTS, BTN_EXIT};
 
         hudFont.getData().setScale(1.62f * VectorFontFactory.HUD_BASE_SCALE);
         for (int i = 0; i < items.length; i++) {
             Rectangle btn = buttons[i];
             boolean hovered = btn.contains(hoverX, hoverY);
 
-            if (i == 4) {
+            if (i == 5) {
                 hudFont.setColor(hovered ? Color.WHITE : Color.SALMON);
             } else if (i == 0 || hovered) {
                 hudFont.setColor(BoardPalette.MINT_ACCENT);
