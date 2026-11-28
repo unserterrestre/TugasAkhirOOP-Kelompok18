@@ -45,7 +45,6 @@ public class Board {
         this.strategies.put(SpecialTileType.DRAGON_VEIN, new DragonVeinStrategy());
         this.strategies.put(SpecialTileType.TALISMAN_BOMB, new TalismanBombStrategy());
 
-        // Rantai Sinergi Kaligrafi (Chain of Responsibility)
         SynergyHandler heavenEarth = new HeavenEarthSynergy();
         heavenEarth.setNext(new ScholarCloudSynergy());
         this.synergyChain = heavenEarth;
@@ -57,6 +56,14 @@ public class Board {
 
     public int[][] getGrid() {
         return getGridSnapshot();
+    }
+
+    public int[][] getGridSnapshot() {
+        int[][] snapshot = new int[SIZE][SIZE];
+        for (int r = 0; r < SIZE; r++) {
+            snapshot[r] = grid[r].clone();
+        }
+        return snapshot;
     }
 
     public boolean canPlaceBlock(Block block, int col, int row) {
@@ -239,7 +246,6 @@ public class Board {
             return ClearResult.empty();
         }
 
-        // Kumpulkan base tile ID yang terkena match untuk mengevaluasi Sinergi Kaligrafi
         Set<Integer> matchedBaseIds = new HashSet<>();
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {
@@ -271,20 +277,20 @@ public class Board {
             }
         }
 
-        List<int[]> uniqueClearedCells = new ArrayList<>();
+        int[][] clearedGrid = new int[SIZE][SIZE];
         List<Integer> clearedTileValues = new ArrayList<>();
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {
                 if (toClear[r][c] && grid[r][c] != 0) {
                     CellSealState currentSeal = sealGrid[r][c];
                     if (currentSeal.isDestroyedOnHit()) {
-                        clearedTileValues.add(grid[r][c]);
+                        int encodedVal = grid[r][c];
+                        clearedTileValues.add(encodedVal);
+                        clearedGrid[r][c] = encodedVal;
                         grid[r][c] = 0;
                         placementGrid[r][c] = 0;
                         sealGrid[r][c] = CellSealState.NORMAL;
-                        uniqueClearedCells.add(new int[]{r, c});
                     } else {
-                        // Ubin bersegel (SEALED -> CRACKED): bertahan 1x lagi!
                         sealGrid[r][c] = currentSeal.onClearHit();
                     }
                 }
@@ -293,14 +299,13 @@ public class Board {
 
         int[] clearedRowsArr = matchedRows.stream().mapToInt(Integer::intValue).toArray();
         int[] clearedColsArr = matchedCols.stream().mapToInt(Integer::intValue).toArray();
-        int[][] clearedCellsArr = uniqueClearedCells.toArray(new int[0][]);
         int[] clearedValuesArr = clearedTileValues.stream().mapToInt(Integer::intValue).toArray();
 
         return new ClearResult(
                 totalMatches,
                 clearedRowsArr,
                 clearedColsArr,
-                clearedCellsArr,
+                clearedGrid,
                 clearedValuesArr,
                 specialTriggered,
                 synergyResult.getRecipeName(),
@@ -334,13 +339,6 @@ public class Board {
         return true;
     }
 
-    public CellSealState getCellSealState(int row, int col) {
-        if (row < 0 || row >= SIZE || col < 0 || col >= SIZE) {
-            return CellSealState.NORMAL;
-        }
-        return sealGrid[row][col];
-    }
-
     public CellSealState[][] getSealSnapshot() {
         CellSealState[][] snapshot = new CellSealState[SIZE][SIZE];
         for (int r = 0; r < SIZE; r++) {
@@ -358,36 +356,6 @@ public class Board {
                 sealGrid[r] = snapshot[r].clone();
             }
         }
-    }
-
-    public boolean hasValidMove(Block block) {
-        if (block == null) {
-            return false;
-        }
-
-        int maxStartRow = SIZE - block.getRows();
-        int maxStartCol = SIZE - block.getCols();
-
-        if (maxStartRow < 0 || maxStartCol < 0) {
-            return false;
-        }
-
-        for (int r = 0; r <= maxStartRow; r++) {
-            for (int c = 0; c <= maxStartCol; c++) {
-                if (canPlace(block, r, c)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public int[][] getGridSnapshot() {
-        int[][] snapshot = new int[SIZE][SIZE];
-        for (int r = 0; r < SIZE; r++) {
-            snapshot[r] = grid[r].clone();
-        }
-        return snapshot;
     }
 
     public void restoreSnapshot(int[][] snapshot) {
@@ -409,6 +377,25 @@ public class Board {
             }
         }
         nextPlacementId++;
+    }
+
+    public boolean hasValidMove(Block block) {
+        if (block == null) {
+            return false;
+        }
+        int maxStartRow = SIZE - block.getRows();
+        int maxStartCol = SIZE - block.getCols();
+        if (maxStartRow < 0 || maxStartCol < 0) {
+            return false;
+        }
+        for (int r = 0; r <= maxStartRow; r++) {
+            for (int c = 0; c <= maxStartCol; c++) {
+                if (canPlace(block, r, c)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void reset() {
